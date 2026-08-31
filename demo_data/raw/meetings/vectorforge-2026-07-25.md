@@ -10,7 +10,7 @@ participants: RC, Maya Chen, Elena Park, Devon Shaw
 
 Elena Park is the chief executive officer. Devon Shaw is the chief financial officer.
 
-Devon reported recognized annual recurring revenue of 3.4 million USD. The 3.8 million USD CRM value included signed contracts that had not started. Devon will send the August close after month end.
+Devon reported recognized annual recurring revenue of 3.4 million USD from the Finance schedule. He said the Finance schedule includes active customer contracts only. The CRM team had not agreed to this value. Devon will send the August close after month end.
 
 Monthly burn is 420000 USD. Current runway is approximately 14 months. The company plans to start a Series B process in January 2027.
 

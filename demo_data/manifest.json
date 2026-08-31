@@ -26,7 +26,7 @@
     {
       "condition_id": "vectorforge_arr_conflict",
       "company_id": "cmp_vectorforge",
-      "expected_result": "The brief shows the 3.8 million USD and 3.4 million USD ARR values as a conflict."
+      "expected_result": "The brief shows the unresolved 3.4 million USD Finance value and 3.8 million USD CRM value."
     },
     {
       "condition_id": "lumenops_runway_change",

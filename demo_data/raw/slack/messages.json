@@ -6,8 +6,8 @@
     "thread_id": "thread-vectorforge-july",
     "sender": "Maya Chen",
     "occurred_at": "2026-07-29T13:05:00Z",
-    "content": "The chief financial officer confirmed that recognized annual recurring revenue is 3.4 million USD. The 3.8 million USD value included contracts that had not started.",
-    "verification_status": "confirmed"
+    "content": "The Finance schedule reports recognized annual recurring revenue of 3.4 million USD. The CRM revenue report shows 3.8 million USD for the same date. The teams have not reconciled the values.",
+    "verification_status": "unresolved"
   },
   {
     "source_record_id": "slack-002",

@@ -36,11 +36,13 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  citationRoleForSource,
   extractClaimValues,
   relevantSourceExcerpt,
   sourceSupportsValue,
 } from '@/lib/evidence-detail';
 import { selectKeyFacts } from '@/lib/brief-view';
+import { formatDisplayNumbers } from '@/lib/display-format';
 import { fallbackBrief, fallbackCompanies } from '@/lib/fallback-data';
 import type {
   BriefItem,
@@ -131,12 +133,14 @@ function valueKindLabel(value: ClaimValue) {
 
 function citationRoleLabel(role: ClaimCitation['role']) {
   if (role === 'supports') return 'Supports';
+  if (role === 'conflicts') return 'Conflicting value';
   if (role === 'earlier') return 'Earlier value';
   return 'Context';
 }
 
 function citationRoleStyle(role: ClaimCitation['role']) {
   if (role === 'supports') return 'border-blue-200 bg-blue-50 text-blue-800';
+  if (role === 'conflicts') return 'border-rose-200 bg-rose-50 text-rose-800';
   if (role === 'earlier') return 'border-amber-200 bg-amber-50 text-amber-800';
   return 'border-stone-200 bg-stone-50 text-slate-600';
 }
@@ -165,7 +169,7 @@ function externalSourceUrl(locator: string) {
 }
 
 function HighlightedText({ text, values }: { text: string; values: ClaimValue[] }) {
-  if (!values.length) return <>{text}</>;
+  if (!values.length) return <>{formatDisplayNumbers(text)}</>;
   const terms = values
     .map((value) => value.value)
     .sort((left, right) => right.length - left.length)
@@ -177,9 +181,9 @@ function HighlightedText({ text, values }: { text: string; values: ClaimValue[] 
       {parts.map((part, index) =>
         normalized.has(part.toLowerCase()) ? (
           <mark className="rounded bg-amber-100 px-0.5 text-inherit" key={`${part}-${index}`}>
-            {part}
+            {formatDisplayNumbers(part)}
           </mark>
-        ) : part,
+        ) : formatDisplayNumbers(part),
       )}
     </>
   );
@@ -373,18 +377,13 @@ function EvidenceItem({
   const values = item.values ?? extractClaimValues(item.text);
   const citations = item.citations ?? itemSources.map((source): ClaimCitation => ({
     sourceId: source.id,
-    role: item.kind === 'fact'
-      ? (
-          /superseded|old/i.test(source.verificationStatus ?? '') || (
-            (item.state === 'conflict' || item.state === 'stale') &&
-            Boolean(values[0]) &&
-            !sourceSupportsValue(values[0]!, source.content) &&
-            values.some((value) => sourceSupportsValue(value, source.content))
-          )
-            ? 'earlier'
-            : 'supports'
-        )
-      : 'context',
+    role: citationRoleForSource(
+      item.kind,
+      item.state,
+      values,
+      source.content,
+      source.verificationStatus,
+    ),
     excerpt: relevantSourceExcerpt(source.content, item.text),
     values: values.filter((value) => sourceSupportsValue(value, source.content)),
   }));
@@ -419,7 +418,7 @@ function EvidenceItem({
               )}
             </div>
           )}
-          <p className="text-[13px] leading-5 text-slate-700">{item.text}</p>
+          <p className="text-[13px] leading-5 text-slate-700">{formatDisplayNumbers(item.text)}</p>
         </div>
 
         <button
@@ -480,7 +479,7 @@ function EvidenceItem({
                       return (
                         <div className="rounded-lg border border-stone-200 bg-white p-2.5" key={`${value.kind}-${value.value}`}>
                           <div className="flex items-start justify-between gap-2">
-                            <span className="text-sm font-semibold text-slate-900">{value.value}</span>
+                            <span className="text-sm font-semibold text-slate-900">{formatDisplayNumbers(value.value)}</span>
                             <span className="text-[10px] text-slate-500">{valueKindLabel(value)}</span>
                           </div>
                           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -993,7 +992,7 @@ export default function Home() {
                 {sourceParentItem && (
                   <section className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
                     <p className="text-[11px] font-semibold text-blue-800">Selected statement</p>
-                    <p className="mt-1.5 text-xs leading-5 text-slate-700">{sourceParentItem.text}</p>
+                    <p className="mt-1.5 text-xs leading-5 text-slate-700">{formatDisplayNumbers(sourceParentItem.text)}</p>
                   </section>
                 )}
 
@@ -1011,7 +1010,7 @@ export default function Home() {
                       {sourceDetail.facts.map((fact) => (
                         <div className="rounded-lg border border-stone-200 bg-white p-3" key={`${fact.key}-${fact.value}`}>
                           <p className="text-[10px] text-slate-500">{humanizeField(fact.key)}</p>
-                          <p className="mt-1 text-sm font-semibold text-slate-900">{fact.value}</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">{formatDisplayNumbers(fact.value)}</p>
                           {fact.date && (
                             <time className="mt-1 block text-[10px] text-slate-500" dateTime={fact.date}>
                               {formatDate(fact.date)}

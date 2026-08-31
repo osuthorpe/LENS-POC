@@ -15,7 +15,7 @@ export interface ClaimValue {
 
 export interface ClaimCitation {
   sourceId: string;
-  role: 'supports' | 'earlier' | 'context';
+  role: 'supports' | 'conflicts' | 'earlier' | 'context';
   excerpt: string;
   values: ClaimValue[];
 }

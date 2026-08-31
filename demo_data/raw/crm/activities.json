@@ -13,13 +13,13 @@
   {
     "source_record_id": "crm-activity-002",
     "company_id": "cmp_vectorforge",
-    "activity_type": "fact_correction",
+    "activity_type": "metric_review",
     "occurred_at": "2026-07-28T13:30:00Z",
     "modified_at": "2026-07-28T14:00:00Z",
     "owner": "RC",
-    "title": "Revenue correction",
-    "content": "The chief financial officer reported recognized annual recurring revenue of 3.4 million USD. The earlier 3.8 million USD value included signed contracts that had not started.",
-    "next_step": "Use 3.4 million USD until the company provides the August close."
+    "title": "CRM revenue report",
+    "content": "The CRM revenue report lists recognized annual recurring revenue of 3.8 million USD. Sales operations confirmed that all contracts in this figure had started. Finance has not approved the CRM total.",
+    "next_step": "Reconcile the Finance and CRM values before the August close."
   },
   {
     "source_record_id": "crm-activity-003",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  citationRoleForSource,
   extractClaimValues,
   relevantSourceExcerpt,
   sourceSupportsValue,
@@ -15,6 +16,11 @@ describe('evidence detail', () => {
       '420000 USD',
       'approximately 14 months',
     ]);
+  });
+
+  it('extracts a money value that has a thousands separator', () => {
+    const values = extractClaimValues('Contract value increased by 180,000 USD.');
+    expect(values.map((value) => value.value)).toEqual(['180,000 USD']);
   });
 
   it('extracts count and date values', () => {
@@ -42,5 +48,19 @@ describe('evidence detail', () => {
     expect(excerpt).toContain('four workloads');
     expect(excerpt).toContain('180000 USD');
     expect(excerpt).not.toContain('meet next week');
+  });
+
+  it('identifies the source that has a conflicting value', () => {
+    const values = extractClaimValues(
+      'Finance reports 3.4 million USD. CRM reports 3.8 million USD.',
+    );
+
+    expect(citationRoleForSource(
+      'fact',
+      'conflict',
+      values,
+      'CRM reports recognized annual recurring revenue of 3.8 million USD.',
+      'metric review',
+    )).toBe('conflicts');
   });
 });

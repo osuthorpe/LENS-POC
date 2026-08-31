@@ -73,7 +73,7 @@ export const fallbackBrief: BriefResult = {
   currentState: [
     {
       id: 'current-1',
-      text: 'Recognized annual recurring revenue is 3.4 million USD. An earlier record states 3.8 million USD because it includes contracts that had not started.',
+      text: 'Recognized annual recurring revenue is unresolved. Finance reports 3.4 million USD. CRM reports 3.8 million USD.',
       sourceIds: ['meeting-001', 'crm-activity-002', 'slack-001'],
       sourceDate: '2026-07-29T13:05:00Z',
       state: 'conflict',
@@ -135,9 +135,9 @@ export const fallbackBrief: BriefResult = {
   openQuestions: [
     {
       id: 'open-1',
-      text: 'What is recognized annual recurring revenue after the August close?',
-      sourceIds: ['meeting-001'],
-      sourceDate: '2026-07-25T15:00:00Z',
+      text: 'Which recognized annual recurring revenue value is correct after the August close?',
+      sourceIds: ['meeting-001', 'crm-activity-002', 'slack-001'],
+      sourceDate: '2026-07-29T13:05:00Z',
       state: 'missing',
       kind: 'question',
     },
@@ -175,17 +175,17 @@ export const fallbackBrief: BriefResult = {
       title: 'VectorForge Portfolio Review',
       sourceDate: '2026-07-25T15:00:00Z',
       locator: 'demo_data/raw/meetings/vectorforge-2026-07-25.md',
-      content: 'The chief financial officer reported recognized annual recurring revenue of 3.4 million USD. The 3.8 million USD CRM value included signed contracts that had not started.',
+      content: 'The chief financial officer reported recognized annual recurring revenue of 3.4 million USD from the Finance schedule. The CRM team had not agreed to this value.',
       verificationStatus: 'direct company statement',
     },
     {
       id: 'crm-activity-002',
       sourceType: 'crm',
-      title: 'Revenue correction',
+      title: 'CRM revenue report',
       sourceDate: '2026-07-28T13:30:00Z',
       locator: 'demo_data/raw/crm/activities.json',
-      content: 'The chief financial officer reported recognized annual recurring revenue of 3.4 million USD.',
-      verificationStatus: 'confirmed',
+      content: 'The CRM revenue report lists recognized annual recurring revenue of 3.8 million USD. Sales operations confirmed that all contracts in this figure had started. Finance has not approved the CRM total.',
+      verificationStatus: 'metric review',
     },
     {
       id: 'slack-001',
@@ -193,8 +193,8 @@ export const fallbackBrief: BriefResult = {
       title: '#portfolio-vectorforge',
       sourceDate: '2026-07-29T13:05:00Z',
       locator: 'thread-vectorforge-july',
-      content: 'The chief financial officer confirmed that recognized annual recurring revenue is 3.4 million USD.',
-      verificationStatus: 'confirmed',
+      content: 'The Finance schedule reports recognized annual recurring revenue of 3.4 million USD. The CRM revenue report shows 3.8 million USD for the same date. The teams have not reconciled the values.',
+      verificationStatus: 'unresolved',
     },
     {
       id: 'crm-activity-001',

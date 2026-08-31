@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { withTransaction } from '@/lib/db';
 import {
+  citationRoleForSource,
   extractClaimValues,
   relevantSourceExcerpt,
   sourceSupportsValue,
@@ -26,18 +27,15 @@ function item(
   const values = extractClaimValues(text);
   const citations = validSourceIds.map((sourceId) => {
     const record = evidence.find((item) => item.id === sourceId)!;
-    const firstValue = values[0];
-    const mentionsAnotherValue = values.some((value) => sourceSupportsValue(value, record.content));
-    const earlier = /superseded|old/i.test(record.verificationStatus ?? '') || (
-      kind === 'fact' &&
-      (state === 'conflict' || state === 'stale') &&
-      Boolean(firstValue) &&
-      !sourceSupportsValue(firstValue!, record.content) &&
-      mentionsAnotherValue
-    );
     return {
       sourceId,
-      role: kind === 'fact' ? (earlier ? 'earlier' as const : 'supports' as const) : 'context' as const,
+      role: citationRoleForSource(
+        kind,
+        state,
+        values,
+        record.content,
+        record.verificationStatus,
+      ),
       excerpt: relevantSourceExcerpt(record.content, text),
       values: values.filter((value) => sourceSupportsValue(value, record.content)),
     };
@@ -119,7 +117,7 @@ function genericBrief(company: Company, evidence: RetrievedEvidence[]) {
 function vectorForgeBrief(evidence: RetrievedEvidence[]) {
   return {
     currentState: [
-      item('current-1', 'Recognized annual recurring revenue is 3.4 million USD. An earlier record states 3.8 million USD because it includes contracts that had not started.', ['meeting-001', 'crm-activity-002', 'slack-001', 'crm-activity-001'], evidence, 'fact', 'conflict'),
+      item('current-1', 'Recognized annual recurring revenue is unresolved. Finance reports 3.4 million USD. CRM reports 3.8 million USD.', ['meeting-001', 'crm-activity-002', 'slack-001'], evidence, 'fact', 'conflict'),
       item('current-2', 'Monthly burn is 420000 USD. Reported runway is approximately 14 months.', ['meeting-001', 'crm-activity-001'], evidence),
       item('current-3', 'The company plans to start a Series B process in January 2027.', ['slack-017', 'meeting-001'], evidence),
     ],
@@ -132,7 +130,7 @@ function vectorForgeBrief(evidence: RetrievedEvidence[]) {
       item('risk-2', 'New hiring can increase burn before the planned funding process.', ['slack-003', 'slack-017'], evidence, 'analysis', 'unverified'),
     ],
     openQuestions: [
-      item('open-1', 'What is recognized annual recurring revenue after the August close?', ['meeting-001'], evidence, 'question', 'missing'),
+      item('open-1', 'Which recognized annual recurring revenue value is correct after the August close?', ['meeting-001', 'crm-activity-002', 'slack-001'], evidence, 'question', 'missing'),
       item('open-2', 'What is the gross margin effect of the Northbank expansion?', ['crm-activity-003'], evidence, 'question', 'missing'),
     ],
     suggestedQuestions: [

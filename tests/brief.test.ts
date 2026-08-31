@@ -30,21 +30,33 @@ function evidence(
 }
 
 describe('brief rules', () => {
-  it('shows the VectorForge revenue conflict with valid citations', () => {
+  it('shows the unresolved VectorForge revenue conflict with valid citations', () => {
     const company = fallbackCompanies.find((item) => item.id === 'cmp_vectorforge')!;
     const records = evidence(company.id, [
       'meeting-001', 'crm-activity-002', 'slack-001', 'crm-activity-001',
       'slack-017', 'crm-activity-003', 'slack-003', 'slack-002',
     ]);
-    const earlierRecord = records.find((record) => record.id === 'crm-activity-001')!;
-    earlierRecord.content = 'Annual recurring revenue was 3.8 million USD.';
-    earlierRecord.normalizedContent = earlierRecord.content;
+    const financeRecord = records.find((record) => record.id === 'meeting-001')!;
+    financeRecord.content = 'Finance reports recognized annual recurring revenue of 3.4 million USD.';
+    financeRecord.normalizedContent = financeRecord.content;
+    const crmRecord = records.find((record) => record.id === 'crm-activity-002')!;
+    crmRecord.content = 'CRM reports recognized annual recurring revenue of 3.8 million USD.';
+    crmRecord.normalizedContent = crmRecord.content;
+    const reconciliationRecord = records.find((record) => record.id === 'slack-001')!;
+    reconciliationRecord.content = 'Finance reports 3.4 million USD. CRM reports 3.8 million USD. The values are not reconciled.';
+    reconciliationRecord.normalizedContent = reconciliationRecord.content;
     const brief = buildBrief(company, records);
     expect(brief.currentState.some((item) => item.state === 'conflict')).toBe(true);
     expect(brief.currentState.every((item) => item.citations?.length === item.sourceIds.length)).toBe(true);
     expect(
-      brief.currentState[0].citations?.find((citation) => citation.sourceId === 'crm-activity-001')?.role,
-    ).toBe('earlier');
+      brief.currentState[0].citations?.find((citation) => citation.sourceId === 'meeting-001')?.role,
+    ).toBe('supports');
+    expect(
+      brief.currentState[0].citations?.find((citation) => citation.sourceId === 'crm-activity-002')?.role,
+    ).toBe('conflicts');
+    expect(
+      brief.currentState[0].citations?.find((citation) => citation.sourceId === 'slack-001')?.role,
+    ).toBe('context');
     expect(() => validateCitations(brief)).not.toThrow();
   });
 

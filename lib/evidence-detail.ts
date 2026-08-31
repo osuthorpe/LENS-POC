@@ -1,9 +1,15 @@
-import type { ClaimValue, ClaimValueKind } from '@/lib/types';
+import type {
+  BriefItem,
+  ClaimCitation,
+  ClaimValue,
+  ClaimValueKind,
+  EvidenceState,
+} from '@/lib/types';
 
 const valuePatterns: Array<{ kind: ClaimValueKind; expression: RegExp }> = [
   {
     kind: 'money',
-    expression: /\b\d+(?:\.\d+)?(?:\s+(?:million|billion|thousand))?\s+USD\b/gi,
+    expression: /\b\d[\d,]*(?:\.\d+)?(?:\s+(?:million|billion|thousand))?\s+USD\b/gi,
   },
   {
     kind: 'percent',
@@ -56,6 +62,37 @@ export function extractClaimValues(text: string): ClaimValue[] {
 
 export function sourceSupportsValue(value: ClaimValue, sourceContent: string) {
   return normalizeValue(sourceContent).includes(normalizeValue(value.value));
+}
+
+export function citationRoleForSource(
+  kind: BriefItem['kind'],
+  state: EvidenceState,
+  values: ClaimValue[],
+  sourceContent: string,
+  verificationStatus: string | null,
+): ClaimCitation['role'] {
+  if (kind !== 'fact') return 'context';
+
+  const sourceValues = values.filter((value) =>
+    sourceSupportsValue(value, sourceContent),
+  );
+  const firstValue = values[0];
+  const supportsFirstValue = Boolean(
+    firstValue && sourceSupportsValue(firstValue, sourceContent),
+  );
+
+  if (state === 'conflict') {
+    if (!sourceValues.length || sourceValues.length === values.length) return 'context';
+    return supportsFirstValue ? 'supports' : 'conflicts';
+  }
+
+  const isEarlier = /superseded|old/i.test(verificationStatus ?? '') || (
+    state === 'stale' &&
+    Boolean(firstValue) &&
+    !supportsFirstValue &&
+    sourceValues.length > 0
+  );
+  return isEarlier ? 'earlier' : 'supports';
 }
 
 const ignoredWords = new Set([
