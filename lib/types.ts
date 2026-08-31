@@ -79,7 +79,24 @@ export interface BriefItem {
   citations?: ClaimCitation[];
 }
 
+export type FeedbackType = 'good' | 'bad' | 'wrong';
+export type FeedbackSection = 'key_facts' | 'risks' | 'questions';
+
+export type FeedbackTarget =
+  | {
+      type: 'brief';
+    }
+  | {
+      type: 'statement';
+      statementId: string;
+      statementText: string;
+      section: FeedbackSection;
+      itemKind: BriefItem['kind'];
+      sourceIds: string[];
+    };
+
 export interface BriefResult {
+  briefRunId?: string;
   company: Company;
   generatedAt: string;
   durationMs: number;

@@ -34,8 +34,8 @@ export async function POST(request: Request) {
     const brief = buildBrief(company, evidence);
     brief.durationMs = Math.round(performance.now() - start);
     validateCitations(brief);
-    await recordBriefRun(brief, evidence);
-    return NextResponse.json(brief);
+    const briefRunId = await recordBriefRun(brief, evidence);
+    return NextResponse.json({ ...brief, briefRunId });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

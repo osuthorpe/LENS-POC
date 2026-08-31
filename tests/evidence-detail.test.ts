@@ -63,4 +63,18 @@ describe('evidence detail', () => {
       'metric review',
     )).toBe('conflicts');
   });
+
+  it('identifies an earlier value without marking the current fact as old', () => {
+    const values = extractClaimValues(
+      'Runway decreased from 18 months in January to 9 months in August.',
+    );
+
+    expect(citationRoleForSource(
+      'fact',
+      'confirmed',
+      values,
+      'The company reported 18 months of runway in January.',
+      'earlier value',
+    )).toBe('earlier');
+  });
 });

@@ -10,9 +10,9 @@ import {
   Clock3,
   Database,
   FileText,
-  FileSearch,
   ExternalLink,
   LoaderCircle,
+  MessageSquarePlus,
   MessageSquareText,
   Newspaper,
   RefreshCw,
@@ -21,6 +21,7 @@ import {
   ShieldAlert,
   TriangleAlert,
 } from 'lucide-react';
+import { FeedbackDialog } from '@/components/feedback-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,8 @@ import type {
   ClaimValue,
   Company,
   EvidenceState,
+  FeedbackSection,
+  FeedbackTarget,
   RelationshipStatus,
   SourceReference,
   SourceDetail,
@@ -97,7 +100,7 @@ function sourceLabel(type: SourceReference['sourceType']) {
 
 function stateLabel(state: EvidenceState) {
   if (state === 'conflict') return 'Values differ';
-  if (state === 'stale') return 'Earlier data';
+  if (state === 'stale') return 'Update needed';
   if (state === 'missing') return 'Missing data';
   if (state === 'unverified') return 'Not confirmed';
   return 'Confirmed';
@@ -105,7 +108,7 @@ function stateLabel(state: EvidenceState) {
 
 function stateGuidance(state: EvidenceState) {
   if (state === 'conflict') return 'Compare the dated values before you use this fact.';
-  if (state === 'stale') return 'Use the newest dated value. AVIC keeps the earlier value as source history.';
+  if (state === 'stale') return 'The newest available value is old. Request a current value before you use it.';
   if (state === 'missing') return 'Ask for this missing information.';
   if (state === 'unverified') return 'Confirm this statement before you use it.';
   return null;
@@ -350,15 +353,21 @@ function CompanyList({
 
 function EvidenceItem({
   item,
+  section,
   sources,
   expanded,
+  feedbackAvailable,
   onToggle,
+  onFeedback,
   onOpenSource,
 }: {
   item: BriefItem;
+  section: FeedbackSection;
   sources: SourceReference[];
   expanded: boolean;
+  feedbackAvailable: boolean;
   onToggle: () => void;
+  onFeedback: () => void;
   onOpenSource: (source: SourceReference, item: BriefItem) => void;
 }) {
   const StateIcon =
@@ -421,32 +430,43 @@ function EvidenceItem({
           <p className="text-[13px] leading-5 text-slate-700">{formatDisplayNumbers(item.text)}</p>
         </div>
 
-        <button
-          aria-controls={panelId}
-          aria-expanded={expanded}
-          aria-label={evidenceLabel}
-          className={`flex min-h-11 w-full items-center justify-between gap-1.5 rounded-lg border px-2 py-1.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:gap-2 sm:px-2.5 ${
-            expanded
-              ? 'border-blue-200 bg-blue-50 text-blue-800'
-              : 'border-stone-200 bg-stone-50/70 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
-          }`}
-          id={`${panelId}-trigger`}
-          onClick={onToggle}
-          type="button"
-        >
-          <FileSearch className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[11px] font-semibold leading-4">{evidenceName}</span>
-            {item.sourceDate ? (
-              <time className="block truncate text-[11px] font-medium leading-4 opacity-75" dateTime={item.sourceDate}>
-                {latestLabel}
-              </time>
-            ) : (
-              <span className="block truncate text-[11px] font-medium leading-4 opacity-75">{latestLabel}</span>
-            )}
-          </span>
-          <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition ${expanded ? 'rotate-180' : ''}`} />
-        </button>
+        <div className="grid grid-cols-[minmax(0,1fr)_36px] gap-1">
+          <button
+            aria-controls={panelId}
+            aria-expanded={expanded}
+            aria-label={evidenceLabel}
+            className={`flex min-h-11 w-full items-center justify-between gap-1 rounded-lg border px-1.5 py-1.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:px-2 ${
+              expanded
+                ? 'border-blue-200 bg-blue-50 text-blue-800'
+                : 'border-stone-200 bg-stone-50/70 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+            }`}
+            id={`${panelId}-trigger`}
+            onClick={onToggle}
+            type="button"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[11px] font-semibold leading-4">{evidenceName}</span>
+              {item.sourceDate ? (
+                <time className="hidden truncate text-[11px] font-medium leading-4 opacity-75 sm:block" dateTime={item.sourceDate}>
+                  {latestLabel}
+                </time>
+              ) : (
+                <span className="hidden truncate text-[11px] font-medium leading-4 opacity-75 sm:block">{latestLabel}</span>
+              )}
+            </span>
+            <ChevronDown className={`h-3 w-3 shrink-0 transition ${expanded ? 'rotate-180' : ''}`} />
+          </button>
+          <button
+            aria-label={`Give feedback on this statement in ${section.replace('_', ' ')}`}
+            className="flex min-h-11 items-center justify-center rounded-lg border border-stone-200 bg-stone-50/70 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!feedbackAvailable}
+            onClick={onFeedback}
+            title={feedbackAvailable ? 'Give feedback' : 'Refresh the live brief to give feedback'}
+            type="button"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </button>
+        </div>
 
         {expanded && (
           <section
@@ -562,17 +582,23 @@ function EvidenceItem({
 
 function EvidenceSection({
   title,
+  section,
   items,
   sources,
   expandedItemId,
+  feedbackAvailable,
   onToggleItem,
+  onFeedback,
   onOpenSource,
 }: {
   title: string;
+  section: FeedbackSection;
   items: BriefItem[];
   sources: SourceReference[];
   expandedItemId: string | null;
+  feedbackAvailable: boolean;
   onToggleItem: (itemId: string) => void;
+  onFeedback: (item: BriefItem, section: FeedbackSection) => void;
   onOpenSource: (source: SourceReference, item: BriefItem) => void;
 }) {
   return (
@@ -586,10 +612,13 @@ function EvidenceSection({
         {items.map((item) => (
           <EvidenceItem
             expanded={expandedItemId === item.id}
+            feedbackAvailable={feedbackAvailable}
             item={item}
             key={item.id}
+            onFeedback={() => onFeedback(item, section)}
             onOpenSource={onOpenSource}
             onToggle={() => onToggleItem(item.id)}
+            section={section}
             sources={sources}
           />
         ))}
@@ -667,6 +696,7 @@ export default function Home() {
   const [sourceDetail, setSourceDetail] = useState<SourceDetail | null>(null);
   const [sourceLoading, setSourceLoading] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
+  const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'ready' | 'offline' | 'error'>('offline');
   const requestId = useRef(0);
@@ -754,6 +784,7 @@ export default function Home() {
     requestId.current = currentRequest;
     setExpandedItemId(null);
     closeSource();
+    setFeedbackTarget(null);
     setSelected(company);
     setLoading(true);
     try {
@@ -782,6 +813,7 @@ export default function Home() {
   }
 
   function openFullSource(source: SourceReference, item: BriefItem) {
+    setFeedbackTarget(null);
     const cached = sourceCache.current.get(`${selected.id}:${source.id}`) ?? null;
     setSourceDetail(cached);
     setSourceError(null);
@@ -796,6 +828,25 @@ export default function Home() {
     setSourceDetail(null);
     setSourceError(null);
     setSourceLoading(false);
+  }
+
+  function openStatementFeedback(item: BriefItem, section: FeedbackSection) {
+    if (!brief.briefRunId) return;
+    closeSource();
+    setFeedbackTarget({
+      type: 'statement',
+      statementId: item.id,
+      statementText: item.text,
+      section,
+      itemKind: item.kind,
+      sourceIds: item.sourceIds,
+    });
+  }
+
+  function openBriefFeedback() {
+    if (!brief.briefRunId) return;
+    closeSource();
+    setFeedbackTarget({ type: 'brief' });
   }
 
   return (
@@ -843,16 +894,30 @@ export default function Home() {
               </optgroup>
             </select>
           </label>
-          <Button
-            className="h-8 bg-[#315f9f] px-3 shadow-sm hover:bg-[#244e87]"
-            disabled={loading}
-            onClick={() => generateBrief()}
-            size="sm"
-          >
-            {loading ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}
-            <span className="hidden sm:inline">{loading ? 'Preparing' : 'Refresh brief'}</span>
-            <span className="sm:hidden">{loading ? 'Preparing' : 'Refresh'}</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              aria-label="Give feedback on this brief"
+              className="h-10 border-stone-200 bg-white px-2.5 text-slate-700 shadow-sm hover:bg-blue-50 hover:text-blue-800"
+              disabled={!showBrief || !brief.briefRunId}
+              onClick={openBriefFeedback}
+              size="sm"
+              title={brief.briefRunId ? 'Give feedback on this brief' : 'Prepare a live brief to give feedback'}
+              variant="outline"
+            >
+              <MessageSquarePlus />
+              <span className="hidden sm:inline">Brief feedback</span>
+            </Button>
+            <Button
+              className="h-10 bg-[#315f9f] px-3 shadow-sm hover:bg-[#244e87]"
+              disabled={loading}
+              onClick={() => generateBrief()}
+              size="sm"
+            >
+              {loading ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}
+              <span className="hidden sm:inline">{loading ? 'Preparing' : 'Refresh brief'}</span>
+              <span className="sm:hidden">{loading ? 'Preparing' : 'Refresh'}</span>
+            </Button>
+          </div>
         </header>
 
         <div className="min-h-[calc(100vh-60px)] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
@@ -918,25 +983,34 @@ export default function Home() {
                   <>
                     <EvidenceSection
                       expandedItemId={expandedItemId}
+                      feedbackAvailable={Boolean(brief.briefRunId)}
                       items={keyFacts}
+                      onFeedback={openStatementFeedback}
                       onOpenSource={openFullSource}
                       onToggleItem={toggleEvidence}
+                      section="key_facts"
                       sources={brief.sources}
                       title="Key facts"
                     />
                     <EvidenceSection
                       expandedItemId={expandedItemId}
+                      feedbackAvailable={Boolean(brief.briefRunId)}
                       items={brief.risks}
+                      onFeedback={openStatementFeedback}
                       onOpenSource={openFullSource}
                       onToggleItem={toggleEvidence}
+                      section="risks"
                       sources={brief.sources}
                       title="Risks"
                     />
                     <EvidenceSection
                       expandedItemId={expandedItemId}
+                      feedbackAvailable={Boolean(brief.briefRunId)}
                       items={[...brief.openQuestions, ...brief.suggestedQuestions]}
+                      onFeedback={openStatementFeedback}
                       onOpenSource={openFullSource}
                       onToggleItem={toggleEvidence}
+                      section="questions"
                       sources={brief.sources}
                       title="Questions"
                     />
@@ -1081,6 +1155,14 @@ export default function Home() {
           )}
         </DialogContent>
       </Dialog>
+
+      <FeedbackDialog
+        briefRunId={brief.briefRunId}
+        companyId={selected.id}
+        key={feedbackTarget?.type === 'statement' ? feedbackTarget.statementId : feedbackTarget?.type ?? 'closed'}
+        onOpenChange={(open) => !open && setFeedbackTarget(null)}
+        target={feedbackTarget}
+      />
     </main>
   );
 }

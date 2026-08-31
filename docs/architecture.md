@@ -10,12 +10,14 @@ flowchart LR
         companyList["Company List"]
         briefView["Structured Brief"]
         sourceView["Source Context"]
+        feedbackForm["Feedback Form"]
     end
 
     subgraph api ["Next.js Application"]
         companyApi["Company API"]
         briefApi["Brief API"]
         sourceApi["Source API"]
+        feedbackApi["Feedback API"]
         importApi["Import API and Command"]
     end
 
@@ -34,6 +36,7 @@ flowchart LR
         chunks[("Text and Vector Chunks")]
         facts[("Structured Facts")]
         audit[("Brief Runs and Evidence Log")]
+        feedback[("Feedback Review Queue")]
     end
 
     subgraph inputs ["V1 Inputs"]
@@ -51,6 +54,7 @@ flowchart LR
     companyList --> companyApi
     briefView --> briefApi
     sourceView --> sourceApi
+    feedbackForm --> feedbackApi
     crm --> adapters
     meetings --> adapters
     slack --> adapters
@@ -69,6 +73,9 @@ flowchart LR
     generate --> validate
     validate --> briefView
     validate --> audit
+    briefView --> feedbackForm
+    feedbackApi --> audit
+    feedbackApi --> feedback
     connectors -. "Replace file adapters" .-> normalize
     generate -. "Optional approved use" .-> model
 ```
@@ -102,6 +109,13 @@ The checksum makes the import idempotent. An import does not change a record whe
 10. RC opens one statement to see its values, evidence role, and source excerpts.
 11. The source API checks the selected company ID before it returns source detail.
 12. RC opens one source to see the stored source content, dates, location, structured facts, and original record.
+13. The Brief API returns the identifier for the saved brief.
+14. RC can mark the full brief or one statement as `Good`, `Bad`, or `Wrong`.
+15. The Feedback API checks the company and saved brief.
+16. The Feedback API copies the saved statement text and source IDs into the review item.
+17. The server sets the priority and opens the review item.
+
+When a newer verified value exists, the main fact is confirmed. The older source remains in Evidence with the `Earlier value` role. The state engine uses `Update needed` only when every available source is marked as old. A current source removes this warning.
 
 ## Retrieval Rank
 
@@ -124,6 +138,15 @@ The company filter runs before this rank. The database does not use an approxima
 | `facts` | Stores structured values that can have conflicts. |
 | `brief_runs` | Stores each brief result, request, mode, and time. |
 | `brief_evidence` | Stores the exact source records and ranks for each brief. |
+| `brief_feedback` | Stores full-brief and statement feedback for review and resolution. |
+
+## Feedback Review Boundary
+
+The end-user API can only create feedback. It cannot set priority, status, reviewer names, or resolution text. The server maps `Good` to low priority, `Bad` to normal priority, and `Wrong` to high priority. All new items have the `open` status.
+
+Each feedback item uses the saved brief ID and company ID together. This rule prevents feedback from one company from linking to a brief for another company. A statement item stores the statement text and source IDs from the saved brief. It does not trust text from the browser.
+
+V1 does not include a reviewer interface because it does not include trusted reviewer identity. A later reviewer API must check the reviewer identity and company access before it can read or update the queue.
 
 ## Source Integration Boundary
 

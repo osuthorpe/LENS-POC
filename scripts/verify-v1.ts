@@ -14,11 +14,15 @@ try {
     record_count: string;
     chunk_count: string;
     vector_count: string;
+    feedback_table: string | null;
+    feedback_company_guard: string;
   }>(`SELECT
     (SELECT COUNT(*) FROM companies)::text AS company_count,
     (SELECT COUNT(*) FROM source_records)::text AS record_count,
     (SELECT COUNT(*) FROM document_chunks)::text AS chunk_count,
-    (SELECT COUNT(*) FROM document_chunks WHERE embedding IS NOT NULL)::text AS vector_count`);
+    (SELECT COUNT(*) FROM document_chunks WHERE embedding IS NOT NULL)::text AS vector_count,
+    to_regclass('public.brief_feedback')::text AS feedback_table,
+    (SELECT COUNT(*) FROM pg_constraint WHERE conname = 'brief_feedback_run_company_fk')::text AS feedback_company_guard`);
   const counts = database.rows[0];
   checks.push({
     name: 'Demo data size',
@@ -29,6 +33,11 @@ try {
     name: 'Vector coverage',
     passed: counts?.chunk_count === counts?.vector_count,
     detail: `${counts?.vector_count} of ${counts?.chunk_count} chunks have vectors`,
+  });
+  checks.push({
+    name: 'Feedback review queue',
+    passed: counts?.feedback_table === 'brief_feedback' && counts.feedback_company_guard === '1',
+    detail: 'The queue links each item to one saved brief and company.',
   });
 
   const companies = await getCompanies();
@@ -55,10 +64,15 @@ try {
     detail: 'The brief keeps both revenue values.',
   });
   const lumenOps = briefs.get('cmp_lumenops');
+  const runwayHistory = lumenOps.changes.find(
+    (entry: { text: string }) => entry.text.includes('18 months') && entry.text.includes('9 months'),
+  );
   checks.push({
-    name: 'LumenOps old data',
-    passed: lumenOps.changes.some((entry: { state: string }) => entry.state === 'stale'),
-    detail: 'The brief shows the runway change.',
+    name: 'LumenOps runway history',
+    passed: runwayHistory?.state === 'confirmed' && runwayHistory.citations?.some(
+      (citation: { role: string }) => citation.role === 'earlier',
+    ),
+    detail: 'The brief uses the current value and keeps the earlier value in Evidence.',
   });
   const kestrel = briefs.get('cmp_kestrelhealth');
   checks.push({

@@ -51,6 +51,10 @@ The brief contains these sections:
 
 The first view shows the statement, evidence state, source count, and newest source date. Each warning tells RC what action he can take. RC can open a statement to see its key values and supporting records. RC can open a supporting record to see the imported source content, record dates, source location, and original fields.
 
+A historical record does not create an update warning when a newer verified value exists. The product marks the main fact as confirmed. It keeps the historical source in Evidence and labels it `Earlier value`. The product uses `Update needed` only when every available source is marked as old and no current source exists. A source adapter must keep this source status.
+
+RC can give feedback on each statement or on the full brief. RC selects `Good`, `Bad`, or `Wrong`. RC can add a note. A note is required for `Wrong`. The product sends the feedback to a review queue. The system sets the priority and review status.
+
 The product must identify generated analysis. The product must separate this analysis from source facts. The product prepares evidence for a decision. The product does not make the decision.
 
 ## User Stories and Acceptance Criteria
@@ -62,6 +66,8 @@ The product must identify generated analysis. The product must separate this ana
 | RC wants to check an important fact. | The fact shows its source and date. RC can open the source context. |
 | RC wants to know the quality of the information. | The brief shows old, missing, unsupported, and conflicting information. |
 | RC wants to prepare for a discussion. | The brief gives questions that come from evidence or known gaps. |
+| RC finds useful, unclear, or incorrect content. | RC can send `Good`, `Bad`, or `Wrong` feedback for one statement or the full brief. |
+| The review team receives feedback. | Each item keeps the company, saved brief, statement, sources, priority, status, and note. |
 | The team wants to keep company data separate. | A company brief contains data for that company only. |
 
 ## Data Import and Integration
@@ -119,6 +125,9 @@ V1 must:
 - Record the retrieval input.
 - Record the evidence that the system used.
 - Record the generation time.
+- Keep a stable identifier for each saved brief.
+- Record statement and full-brief feedback in a separate review queue.
+- Set feedback priority on the server.
 - Run from a clean local checkout with the included demo data.
 
 ## Constraints
@@ -167,6 +176,8 @@ The prototype is ready when all these statements are true:
 - The setup instructions are complete.
 - RC can understand the current state without opening every source.
 - RC can identify important changes, risks, and next questions.
+- RC can send feedback without adding more text to the main brief.
+- The system can place new feedback in the review queue.
 
 ## Primary Success Measures
 
@@ -175,5 +186,6 @@ The prototype is ready when all these statements are true:
 - **Company separation:** Tests find no information from a different company.
 - **Key fact retrieval:** The product retrieves all specified key facts in the demo data.
 - **Date visibility:** Each source shows its applicable date.
-- **Old data warnings:** The product gives a warning for old data.
+- **Update warnings:** The product gives an update warning only when no current value exists.
+- **Feedback traceability:** Each feedback item links to one saved brief and company.
 - **Preparation value:** RC gives the brief a score of 4 out of 5 or more.

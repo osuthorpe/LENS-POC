@@ -35,7 +35,7 @@
   {
     "source_record_id": "crm-activity-004",
     "company_id": "cmp_lumenops",
-    "activity_type": "portfolio_update",
+    "activity_type": "earlier_value",
     "occurred_at": "2026-01-18T14:00:00Z",
     "modified_at": "2026-01-18T15:00:00Z",
     "owner": "RC",

@@ -84,6 +84,71 @@ CREATE TABLE IF NOT EXISTS brief_evidence (
   PRIMARY KEY (brief_run_id, source_record_id)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS brief_runs_id_company_unique_idx
+  ON brief_runs (id, company_id);
+
+CREATE TABLE IF NOT EXISTS brief_feedback (
+  id UUID PRIMARY KEY,
+  brief_run_id UUID NOT NULL,
+  company_id TEXT NOT NULL,
+  target_type TEXT NOT NULL CHECK (target_type IN ('brief', 'statement')),
+  statement_id TEXT,
+  statement_text TEXT,
+  statement_section TEXT CHECK (
+    statement_section IS NULL OR statement_section IN ('key_facts', 'risks', 'questions')
+  ),
+  statement_kind TEXT CHECK (
+    statement_kind IS NULL OR statement_kind IN ('fact', 'analysis', 'question')
+  ),
+  source_record_ids TEXT[] NOT NULL DEFAULT '{}',
+  feedback_type TEXT NOT NULL CHECK (feedback_type IN ('good', 'bad', 'wrong')),
+  feedback_note TEXT CHECK (
+    feedback_note IS NULL OR char_length(feedback_note) <= 2000
+  ),
+  priority TEXT NOT NULL CHECK (priority IN ('low', 'normal', 'high')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (
+    status IN ('open', 'in_review', 'resolved', 'dismissed')
+  ),
+  submitted_by TEXT,
+  reviewed_by TEXT,
+  reviewed_at TIMESTAMPTZ,
+  resolution_note TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT brief_feedback_run_company_fk
+    FOREIGN KEY (brief_run_id, company_id)
+    REFERENCES brief_runs (id, company_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT brief_feedback_target_check
+    CHECK (
+      (
+        target_type = 'brief'
+        AND statement_id IS NULL
+        AND statement_text IS NULL
+        AND statement_section IS NULL
+        AND statement_kind IS NULL
+      )
+      OR
+      (
+        target_type = 'statement'
+        AND statement_id IS NOT NULL
+        AND statement_text IS NOT NULL
+        AND statement_section IS NOT NULL
+        AND statement_kind IS NOT NULL
+      )
+    ),
+  CONSTRAINT brief_feedback_wrong_note_check
+    CHECK (
+      feedback_type <> 'wrong'
+      OR NULLIF(BTRIM(feedback_note), '') IS NOT NULL
+    )
+);
+
+CREATE INDEX IF NOT EXISTS brief_feedback_triage_idx
+  ON brief_feedback (company_id, status, priority, created_at DESC);
+CREATE INDEX IF NOT EXISTS brief_feedback_target_idx
+  ON brief_feedback (brief_run_id, statement_id);
+
 CREATE INDEX IF NOT EXISTS source_records_company_date_idx
   ON source_records (company_id, event_date DESC NULLS LAST, publication_date DESC NULLS LAST);
 CREATE INDEX IF NOT EXISTS source_records_company_type_idx

@@ -86,7 +86,7 @@ export function citationRoleForSource(
     return supportsFirstValue ? 'supports' : 'conflicts';
   }
 
-  const isEarlier = /superseded|old/i.test(verificationStatus ?? '') || (
+  const isEarlier = /superseded|old|earlier/i.test(verificationStatus ?? '') || (
     state === 'stale' &&
     Boolean(firstValue) &&
     !supportsFirstValue &&

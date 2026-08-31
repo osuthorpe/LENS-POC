@@ -36,7 +36,7 @@
     "thread_id": "thread-lumenops-runway",
     "sender": "RC",
     "occurred_at": "2026-08-11T12:40:00Z",
-    "content": "Runway is now 9 months. The January CRM record still shows 18 months and needs a stale-data warning.",
+    "content": "Runway is now 9 months. The January CRM record shows the earlier value of 18 months.",
     "verification_status": "confirmed"
   },
   {

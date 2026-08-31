@@ -17,6 +17,8 @@ V1 uses fictional demo records. It does not connect to production source systems
 - Company-level evidence isolation
 - Source context for each brief item
 - A recorded evidence set for each brief run
+- `Good`, `Bad`, and `Wrong` feedback for each statement and full brief
+- A company-scoped feedback review queue
 - A Shadcn user interface
 
 ## Start the Product
@@ -80,7 +82,8 @@ The V1 verification checks these items:
 - Each brief item has valid citations.
 - All 59 chunks have vectors.
 - VectorForge shows the revenue conflict.
-- LumenOps shows the old runway value.
+- LumenOps uses the current runway value and keeps the earlier value in Evidence.
+- The feedback queue links each item to one saved brief and company.
 - Kestrel Health shows the unverified FDA claim.
 - Northstar Security shows the missing metrics.
 
@@ -88,7 +91,9 @@ The V1 verification checks these items:
 
 The import process reads files from `demo_data/raw`. It keeps the original record in PostgreSQL. It also creates standard text, facts, chunks, checksums, and local vectors.
 
-The brief request applies a hard company filter first. It then combines full-text rank, vector similarity, source quality, and source date. The brief engine uses only the returned evidence. It records the retrieval input, evidence rank, result, and generation time.
+The brief request applies a hard company filter first. It then combines full-text rank, vector similarity, source quality, and source date. The brief engine uses only the returned evidence. It records the retrieval input, evidence rank, result, and generation time. The engine shows `Update needed` when every available source for a fact is marked as old. A current source removes this warning.
+
+The interface can send feedback for one statement or the full brief. The server checks the saved brief and company. It copies the saved statement and source IDs into the review item. The browser cannot set the priority or status.
 
 V1 creates vectors on the local computer. V1 does not send source records to an external model. The local OpenAI key stays unused until the team approves the source data that a model can receive.
 
@@ -112,7 +117,7 @@ See [the architecture document](docs/architecture.md) for more information.
 | Path | Purpose |
 | --- | --- |
 | `app/page.tsx` | Main company brief interface |
-| `app/api` | Company, brief, source, import, and health endpoints |
+| `app/api` | Company, brief, source, feedback, import, and health endpoints |
 | `lib/ingestion.ts` | File adapters, normalization, checksums, chunks, facts, and vectors |
 | `lib/retrieval.ts` | Company-filtered hybrid retrieval |
 | `lib/brief.ts` | Evidence-based brief generation and citation checks |
@@ -126,5 +131,6 @@ See [the architecture document](docs/architecture.md) for more information.
 - V1 uses a local evidence engine for brief generation.
 - V1 does not make investment recommendations.
 - V1 does not enforce production access rules.
+- V1 does not include a reviewer interface or reviewer identity.
 - V1 does not run scheduled imports or webhooks.
 - V1 does not use an approximate vector index. Exact search is sufficient for this data size.

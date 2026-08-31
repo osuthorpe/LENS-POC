@@ -9,6 +9,22 @@ import {
 import type { RetrievedEvidence } from '@/lib/retrieval';
 import type { BriefItem, BriefResult, Company, EvidenceState } from '@/lib/types';
 
+const historicalStatusPattern = /earlier|old|outdated|stale|superseded|update[_ -]?needed/i;
+
+function resolveEvidenceState(
+  kind: BriefItem['kind'],
+  requestedState: EvidenceState,
+  records: RetrievedEvidence[],
+): EvidenceState {
+  if (kind !== 'fact' || requestedState !== 'confirmed' || records.length === 0) {
+    return requestedState;
+  }
+  const hasCurrentRecord = records.some(
+    (record) => !historicalStatusPattern.test(record.verificationStatus ?? ''),
+  );
+  return hasCurrentRecord ? 'confirmed' : 'stale';
+}
+
 function item(
   id: string,
   text: string,
@@ -17,13 +33,12 @@ function item(
   kind: BriefItem['kind'] = 'fact',
   state: EvidenceState = 'confirmed',
 ): BriefItem {
-  const dates = sourceIds
-    .map((sourceId) => evidence.find((record) => record.id === sourceId)?.sourceDate)
-    .filter((date): date is string => Boolean(date))
-    .sort();
-  const validSourceIds = sourceIds.filter((sourceId) =>
-    evidence.some((record) => record.id === sourceId),
-  );
+  const sourceRecords = sourceIds
+    .map((sourceId) => evidence.find((record) => record.id === sourceId))
+    .filter((record): record is RetrievedEvidence => Boolean(record));
+  const dates = sourceRecords.map((record) => record.sourceDate).sort();
+  const validSourceIds = sourceRecords.map((record) => record.id);
+  const resolvedState = resolveEvidenceState(kind, state, sourceRecords);
   const values = extractClaimValues(text);
   const citations = validSourceIds.map((sourceId) => {
     const record = evidence.find((item) => item.id === sourceId)!;
@@ -31,7 +46,7 @@ function item(
       sourceId,
       role: citationRoleForSource(
         kind,
-        state,
+        resolvedState,
         values,
         record.content,
         record.verificationStatus,
@@ -46,7 +61,7 @@ function item(
     sourceIds: validSourceIds,
     sourceDate: dates.at(-1) ?? null,
     kind,
-    state,
+    state: resolvedState,
     values,
     citations,
   };
@@ -143,12 +158,12 @@ function vectorForgeBrief(evidence: RetrievedEvidence[]) {
 function lumenOpsBrief(evidence: RetrievedEvidence[]) {
   return {
     currentState: [
-      item('current-1', 'The newest record reports 9 months of runway. An earlier January record reports 18 months.', ['meeting-002', 'crm-activity-005', 'crm-activity-004', 'slack-004'], evidence, 'fact', 'stale'),
+      item('current-1', 'The newest record reports 9 months of runway. An earlier January record reports 18 months.', ['meeting-002', 'crm-activity-005', 'crm-activity-004', 'slack-004'], evidence),
       item('current-2', 'Monthly recurring revenue is 142000 USD. Monthly burn is 310000 USD.', ['meeting-002', 'crm-activity-005'], evidence),
       item('current-3', 'The largest customer represents 31 percent of monthly recurring revenue.', ['meeting-002', 'crm-activity-006'], evidence),
     ],
     changes: [
-      item('change-1', 'Runway decreased from 18 months in January to 9 months in August.', ['crm-activity-004', 'crm-activity-005', 'meeting-002'], evidence, 'fact', 'stale'),
+      item('change-1', 'Runway decreased from 18 months in January to 9 months in August.', ['crm-activity-004', 'crm-activity-005', 'meeting-002'], evidence),
       item('change-2', 'The company paused three open roles after the cash review.', ['meeting-002', 'slack-018'], evidence),
     ],
     risks: [

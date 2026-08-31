@@ -66,10 +66,38 @@ describe('brief rules', () => {
       'meeting-002', 'crm-activity-005', 'crm-activity-004', 'slack-004',
       'crm-activity-006', 'slack-018', 'slack-005',
     ]);
+    const earlierRecord = records.find((record) => record.id === 'crm-activity-004')!;
+    earlierRecord.content = 'The company reported 18 months of runway in January.';
+    earlierRecord.normalizedContent = earlierRecord.content;
+    earlierRecord.verificationStatus = 'earlier value';
+    const currentRecord = records.find((record) => record.id === 'crm-activity-005')!;
+    currentRecord.content = 'The company reported 9 months of runway in August.';
+    currentRecord.normalizedContent = currentRecord.content;
     const brief = buildBrief(company, records);
+    const runwayChange = brief.changes.find(
+      (item) => item.text.includes('18 months') && item.text.includes('9 months'),
+    );
     expect(brief.currentState.some((item) => item.text.includes('newest record'))).toBe(true);
-    expect(brief.changes.some((item) => item.text.includes('18 months') && item.text.includes('9 months'))).toBe(true);
-    expect(brief.changes.some((item) => item.state === 'stale')).toBe(true);
+    expect(runwayChange?.state).toBe('confirmed');
+    expect(
+      runwayChange?.citations?.find((citation) => citation.sourceId === 'crm-activity-004')?.role,
+    ).toBe('earlier');
+  });
+
+  it('requests an update when every available source is old', () => {
+    const company = {
+      ...fallbackCompanies[0],
+      id: 'cmp_systemrule',
+      lastReviewDate: null,
+    };
+    const records = evidence(company.id, ['crm-outdated']);
+    records[0].content = 'Monthly burn was 240000 USD.';
+    records[0].normalizedContent = records[0].content;
+    records[0].verificationStatus = 'outdated';
+
+    const brief = buildBrief(company, records);
+
+    expect(brief.currentState[0].state).toBe('stale');
   });
 
   it('keeps the Kestrel FDA claim unverified', () => {
