@@ -1,0 +1,52 @@
+{
+  "dataset_id": "avic-demo-v1",
+  "version": "1.0.0",
+  "generated_at": "2026-08-30T16:00:00Z",
+  "fictional_data": true,
+  "company_count": 10,
+  "portfolio_company_count": 2,
+  "pipeline_company_count": 8,
+  "source_record_count": 59,
+  "crm_activity_count": 14,
+  "meeting_note_count": 5,
+  "slack_message_count": 18,
+  "news_article_count": 12,
+  "source_categories": [
+    "crm",
+    "meeting",
+    "slack",
+    "news"
+  ],
+  "focus_companies": [
+    "cmp_vectorforge",
+    "cmp_lumenops",
+    "cmp_kestrelhealth"
+  ],
+  "required_test_conditions": [
+    {
+      "condition_id": "vectorforge_arr_conflict",
+      "company_id": "cmp_vectorforge",
+      "expected_result": "The brief shows the 3.8 million USD and 3.4 million USD ARR values as a conflict."
+    },
+    {
+      "condition_id": "lumenops_runway_change",
+      "company_id": "cmp_lumenops",
+      "expected_result": "The brief shows that runway decreased from 18 months to 9 months."
+    },
+    {
+      "condition_id": "kestrel_unverified_claim",
+      "company_id": "cmp_kestrelhealth",
+      "expected_result": "The brief identifies the FDA pilot statement as unverified."
+    },
+    {
+      "condition_id": "atlasgrid_alias",
+      "company_id": "cmp_atlasgrid",
+      "expected_result": "The import process connects the Atlas Grid alias to AtlasGrid AI."
+    },
+    {
+      "condition_id": "northstar_missing_metrics",
+      "company_id": "cmp_northstarsecurity",
+      "expected_result": "The brief shows that financial and customer metrics are missing."
+    }
+  ]
+}

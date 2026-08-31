@@ -1,0 +1,110 @@
+[
+  {
+    "source_record_id": "news-001",
+    "company_id": "cmp_vectorforge",
+    "publisher": "Enterprise AI Review",
+    "title": "VectorForge adds regional processing controls",
+    "published_at": "2026-08-03T12:00:00Z",
+    "url": "https://news.example/vectorforge-regional-controls",
+    "content": "VectorForge announced regional processing controls for customers in the European Union. The company said that the feature is available now."
+  },
+  {
+    "source_record_id": "news-002",
+    "company_id": "cmp_vectorforge",
+    "publisher": "VectorForge AI",
+    "title": "VectorForge publishes inference cost report",
+    "published_at": "2026-08-14T09:00:00Z",
+    "url": "https://vectorforge.example/reports/inference-cost-2026",
+    "content": "The company reported a 22 percent reduction in average inference cost for a selected customer group. The report did not include all customers."
+  },
+  {
+    "source_record_id": "news-003",
+    "company_id": "cmp_lumenops",
+    "publisher": "Support Systems Journal",
+    "title": "LumenOps releases multilingual review tools",
+    "published_at": "2026-07-22T10:00:00Z",
+    "url": "https://news.example/lumenops-multilingual",
+    "content": "LumenOps released support review tools for Spanish, French, and German conversations."
+  },
+  {
+    "source_record_id": "news-004",
+    "company_id": "cmp_lumenops",
+    "publisher": "LumenOps AI",
+    "title": "LumenOps appoints a finance lead",
+    "published_at": "2026-08-09T13:00:00Z",
+    "url": "https://lumenops.example/news/finance-lead",
+    "content": "LumenOps appointed Erin Moss as vice president of finance. The company said that she will lead funding preparation."
+  },
+  {
+    "source_record_id": "news-005",
+    "company_id": "cmp_kestrelhealth",
+    "publisher": "Clinical Research Wire",
+    "title": "Kestrel Health joins research software program",
+    "published_at": "2026-08-02T11:00:00Z",
+    "url": "https://news.example/kestrel-research-program",
+    "content": "Kestrel Health joined a software evaluation program at Beacon Research Hospital. The announcement did not mention the FDA or a regulatory pilot."
+  },
+  {
+    "source_record_id": "news-006",
+    "company_id": "cmp_atlasgrid",
+    "publisher": "Factory Systems News",
+    "title": "Atlas Grid expands an Ohio installation",
+    "published_at": "2026-07-29T08:30:00Z",
+    "url": "https://news.example/atlas-grid-ohio",
+    "content": "Atlas Grid expanded its defect detection system from one production line to three lines at an Ohio plant."
+  },
+  {
+    "source_record_id": "news-007",
+    "company_id": "cmp_cedarrobotics",
+    "publisher": "Warehouse Technology Daily",
+    "title": "Cedar Robotics starts a regional warehouse trial",
+    "published_at": "2026-08-20T14:00:00Z",
+    "url": "https://news.example/cedar-warehouse-trial",
+    "content": "Cedar Robotics started a trial with a regional parts distributor. The announcement did not state the contract value."
+  },
+  {
+    "source_record_id": "news-008",
+    "company_id": "cmp_prismlegal",
+    "publisher": "Legal Operations Review",
+    "title": "Prism Legal adds contract approval controls",
+    "published_at": "2026-08-08T12:00:00Z",
+    "url": "https://news.example/prism-approval-controls",
+    "content": "Prism Legal released approval controls for contract changes. The feature keeps an audit record for each approval."
+  },
+  {
+    "source_record_id": "news-009",
+    "company_id": "cmp_sagebio",
+    "publisher": "Laboratory Data News",
+    "title": "SageBio starts three design partnerships",
+    "published_at": "2026-07-26T09:00:00Z",
+    "url": "https://news.example/sagebio-design-partners",
+    "content": "SageBio started design partnerships with three small biotechnology companies. The announcement did not describe payment terms."
+  },
+  {
+    "source_record_id": "news-010",
+    "company_id": "cmp_quantaledger",
+    "publisher": "Finance Automation Report",
+    "title": "QuantaLedger adds evidence export",
+    "published_at": "2026-08-06T15:00:00Z",
+    "url": "https://news.example/quanta-evidence-export",
+    "content": "QuantaLedger released an evidence export for external audit teams. The export supports common accounting workbooks."
+  },
+  {
+    "source_record_id": "news-011",
+    "company_id": "cmp_relayworks",
+    "publisher": "Field Service Technology",
+    "title": "RelayWorks signs a regional service company",
+    "published_at": "2026-08-19T10:30:00Z",
+    "url": "https://news.example/relayworks-regional-customer",
+    "content": "RelayWorks signed a regional heating service company. The customer has 85 field technicians."
+  },
+  {
+    "source_record_id": "news-012",
+    "company_id": "cmp_northstarsecurity",
+    "publisher": "Northstar Security AI",
+    "title": "Northstar Security opens its private beta",
+    "published_at": "2026-08-24T16:00:00Z",
+    "url": "https://northstarsecurity.example/news/private-beta",
+    "content": "Northstar Security opened a private beta for small security teams. The announcement did not include customer or revenue information."
+  }
+]

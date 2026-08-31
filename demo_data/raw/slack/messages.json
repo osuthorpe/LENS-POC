@@ -1,0 +1,182 @@
+[
+  {
+    "source_record_id": "slack-001",
+    "company_id": "cmp_vectorforge",
+    "channel": "portfolio-vectorforge",
+    "thread_id": "thread-vectorforge-july",
+    "sender": "Maya Chen",
+    "occurred_at": "2026-07-29T13:05:00Z",
+    "content": "The chief financial officer confirmed that recognized annual recurring revenue is 3.4 million USD. The 3.8 million USD value included contracts that had not started.",
+    "verification_status": "confirmed"
+  },
+  {
+    "source_record_id": "slack-002",
+    "company_id": "cmp_vectorforge",
+    "channel": "portfolio-vectorforge",
+    "thread_id": "thread-vectorforge-margin",
+    "sender": "RC",
+    "occurred_at": "2026-08-07T14:20:00Z",
+    "content": "Northbank expanded its use. We still need the gross margin effect before the next review.",
+    "verification_status": "internal_note"
+  },
+  {
+    "source_record_id": "slack-003",
+    "company_id": "cmp_vectorforge",
+    "channel": "portfolio-vectorforge",
+    "thread_id": "thread-vectorforge-hiring",
+    "sender": "Jordan Lee",
+    "occurred_at": "2026-08-15T10:15:00Z",
+    "content": "The company opened four infrastructure engineering roles. This can increase burn if hiring starts before the next funding round.",
+    "verification_status": "public_link_reviewed"
+  },
+  {
+    "source_record_id": "slack-004",
+    "company_id": "cmp_lumenops",
+    "channel": "portfolio-lumenops",
+    "thread_id": "thread-lumenops-runway",
+    "sender": "RC",
+    "occurred_at": "2026-08-11T12:40:00Z",
+    "content": "Runway is now 9 months. The January CRM record still shows 18 months and needs a stale-data warning.",
+    "verification_status": "confirmed"
+  },
+  {
+    "source_record_id": "slack-005",
+    "company_id": "cmp_lumenops",
+    "channel": "portfolio-lumenops",
+    "thread_id": "thread-lumenops-renewal",
+    "sender": "Maya Chen",
+    "occurred_at": "2026-08-13T15:30:00Z",
+    "content": "The largest customer renewal is the main near-term risk. The founder will send an account plan next week.",
+    "verification_status": "internal_note"
+  },
+  {
+    "source_record_id": "slack-006",
+    "company_id": "cmp_kestrelhealth",
+    "channel": "pipeline-health",
+    "thread_id": "thread-kestrel-regulatory",
+    "sender": "Jordan Lee",
+    "occurred_at": "2026-08-17T18:10:00Z",
+    "content": "I heard that Kestrel has an FDA pilot. I do not have a document or a direct company statement that confirms this claim.",
+    "verification_status": "unverified"
+  },
+  {
+    "source_record_id": "slack-007",
+    "company_id": "cmp_kestrelhealth",
+    "channel": "pipeline-health",
+    "thread_id": "thread-kestrel-regulatory",
+    "sender": "RC",
+    "occurred_at": "2026-08-18T09:25:00Z",
+    "content": "Do not treat the FDA pilot statement as a fact. Ask the company for the program name and supporting document.",
+    "verification_status": "internal_instruction"
+  },
+  {
+    "source_record_id": "slack-008",
+    "company_id": "cmp_atlasgrid",
+    "channel": "pipeline-industrial",
+    "thread_id": "thread-atlasgrid-alias",
+    "sender": "Maya Chen",
+    "occurred_at": "2026-08-06T11:00:00Z",
+    "content": "The news record uses the name Atlas Grid. It is the same company as AtlasGrid AI.",
+    "verification_status": "confirmed"
+  },
+  {
+    "source_record_id": "slack-009",
+    "company_id": "cmp_atlasgrid",
+    "channel": "pipeline-industrial",
+    "thread_id": "thread-atlasgrid-customer",
+    "sender": "RC",
+    "occurred_at": "2026-08-07T17:45:00Z",
+    "content": "Customer concentration is high. We need the renewal date for the largest automotive customer.",
+    "verification_status": "internal_note"
+  },
+  {
+    "source_record_id": "slack-010",
+    "company_id": "cmp_cedarrobotics",
+    "channel": "pipeline-robotics",
+    "thread_id": "thread-cedar-trials",
+    "sender": "RC",
+    "occurred_at": "2026-08-22T09:10:00Z",
+    "content": "The two trials are paid. We do not have enough data to estimate gross margin or deployment cost.",
+    "verification_status": "confirmed"
+  },
+  {
+    "source_record_id": "slack-011",
+    "company_id": "cmp_prismlegal",
+    "channel": "pipeline-legal",
+    "thread_id": "thread-prism-security",
+    "sender": "Maya Chen",
+    "occurred_at": "2026-08-15T13:50:00Z",
+    "content": "The SOC 2 Type I report is complete. The company expects the Type II audit in the first quarter of 2027.",
+    "verification_status": "confirmed"
+  },
+  {
+    "source_record_id": "slack-012",
+    "company_id": "cmp_sagebio",
+    "channel": "pipeline-life-science",
+    "thread_id": "thread-sagebio-data",
+    "sender": "RC",
+    "occurred_at": "2026-08-01T16:25:00Z",
+    "content": "Data access rights are not clear. This issue can prevent use of laboratory data for model training.",
+    "verification_status": "internal_note"
+  },
+  {
+    "source_record_id": "slack-013",
+    "company_id": "cmp_quantaledger",
+    "channel": "pipeline-finance",
+    "thread_id": "thread-quanta-customers",
+    "sender": "Jordan Lee",
+    "occurred_at": "2026-08-12T16:40:00Z",
+    "content": "The customer references were positive. Both customers said that the product reduced audit preparation time.",
+    "verification_status": "reference_call"
+  },
+  {
+    "source_record_id": "slack-014",
+    "company_id": "cmp_quantaledger",
+    "channel": "pipeline-finance",
+    "thread_id": "thread-quanta-concentration",
+    "sender": "Maya Chen",
+    "occurred_at": "2026-08-13T10:20:00Z",
+    "content": "Customer concentration remains the main risk. Two customers represent 46 percent of revenue.",
+    "verification_status": "confirmed"
+  },
+  {
+    "source_record_id": "slack-015",
+    "company_id": "cmp_relayworks",
+    "channel": "pipeline-field-service",
+    "thread_id": "thread-relay-implementation",
+    "sender": "RC",
+    "occurred_at": "2026-08-24T12:15:00Z",
+    "content": "The product appears useful. We still need the average implementation time and weekly user activity.",
+    "verification_status": "internal_note"
+  },
+  {
+    "source_record_id": "slack-016",
+    "company_id": "cmp_northstarsecurity",
+    "channel": "pipeline-security",
+    "thread_id": "thread-northstar-intro",
+    "sender": "RC",
+    "occurred_at": "2026-08-25T12:30:00Z",
+    "content": "This record has only a product description. Revenue, customer, burn, runway, and team information are missing.",
+    "verification_status": "confirmed"
+  },
+  {
+    "source_record_id": "slack-017",
+    "company_id": "cmp_vectorforge",
+    "channel": "portfolio-vectorforge",
+    "thread_id": "thread-vectorforge-funding",
+    "sender": "RC",
+    "occurred_at": "2026-08-20T15:05:00Z",
+    "content": "The company plans to start a Series B process in January 2027. The plan depends on two enterprise expansions.",
+    "verification_status": "company_statement"
+  },
+  {
+    "source_record_id": "slack-018",
+    "company_id": "cmp_lumenops",
+    "channel": "portfolio-lumenops",
+    "thread_id": "thread-lumenops-hiring",
+    "sender": "Jordan Lee",
+    "occurred_at": "2026-08-16T14:35:00Z",
+    "content": "The company paused three open roles after the cash review. This action can reduce the planned burn increase.",
+    "verification_status": "company_statement"
+  }
+]

@@ -1,0 +1,22 @@
+name: aivc
+
+services:
+  database:
+    image: pgvector/pgvector:pg17
+    container_name: aivc-postgres
+    environment:
+      POSTGRES_DB: aivc
+      POSTGRES_USER: aivc
+      POSTGRES_PASSWORD: aivc_local
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aivc -d aivc"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    volumes:
+      - aivc_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  aivc_postgres_data:

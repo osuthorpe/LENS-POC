@@ -1,0 +1,156 @@
+[
+  {
+    "source_record_id": "crm-activity-001",
+    "company_id": "cmp_vectorforge",
+    "activity_type": "portfolio_update",
+    "occurred_at": "2026-07-11T15:00:00Z",
+    "modified_at": "2026-07-11T18:10:00Z",
+    "owner": "RC",
+    "title": "Second quarter update",
+    "content": "The company reported annual recurring revenue of 3.8 million USD. Monthly burn was 420000 USD. Reported runway was 14 months.",
+    "next_step": "Confirm the revenue recognition method with the chief financial officer."
+  },
+  {
+    "source_record_id": "crm-activity-002",
+    "company_id": "cmp_vectorforge",
+    "activity_type": "fact_correction",
+    "occurred_at": "2026-07-28T13:30:00Z",
+    "modified_at": "2026-07-28T14:00:00Z",
+    "owner": "RC",
+    "title": "Revenue correction",
+    "content": "The chief financial officer reported recognized annual recurring revenue of 3.4 million USD. The earlier 3.8 million USD value included signed contracts that had not started.",
+    "next_step": "Use 3.4 million USD until the company provides the August close."
+  },
+  {
+    "source_record_id": "crm-activity-003",
+    "company_id": "cmp_vectorforge",
+    "activity_type": "customer_update",
+    "occurred_at": "2026-08-06T16:00:00Z",
+    "modified_at": "2026-08-06T16:20:00Z",
+    "owner": "RC",
+    "title": "Customer expansion",
+    "content": "Northbank expanded from one production workload to four workloads. The contract value increased by 180000 USD.",
+    "next_step": "Ask for the expansion start date and gross margin effect."
+  },
+  {
+    "source_record_id": "crm-activity-004",
+    "company_id": "cmp_lumenops",
+    "activity_type": "portfolio_update",
+    "occurred_at": "2026-01-18T14:00:00Z",
+    "modified_at": "2026-01-18T15:00:00Z",
+    "owner": "RC",
+    "title": "January operating review",
+    "content": "The company reported 18 months of runway. Monthly recurring revenue was 95000 USD. The company had 22 employees.",
+    "next_step": "Review customer retention in the next quarter."
+  },
+  {
+    "source_record_id": "crm-activity-005",
+    "company_id": "cmp_lumenops",
+    "activity_type": "portfolio_update",
+    "occurred_at": "2026-08-10T17:00:00Z",
+    "modified_at": "2026-08-11T09:00:00Z",
+    "owner": "RC",
+    "title": "August cash review",
+    "content": "The company reported 9 months of runway. Monthly burn increased to 310000 USD. Monthly recurring revenue was 142000 USD.",
+    "next_step": "Review the hiring plan and the funding schedule."
+  },
+  {
+    "source_record_id": "crm-activity-006",
+    "company_id": "cmp_lumenops",
+    "activity_type": "risk_update",
+    "occurred_at": "2026-08-12T11:00:00Z",
+    "modified_at": "2026-08-12T11:30:00Z",
+    "owner": "RC",
+    "title": "Customer concentration",
+    "content": "The largest customer represents 31 percent of monthly recurring revenue. The contract renews in November 2026.",
+    "next_step": "Ask for the renewal plan and account health data."
+  },
+  {
+    "source_record_id": "crm-activity-007",
+    "company_id": "cmp_kestrelhealth",
+    "activity_type": "diligence_update",
+    "occurred_at": "2026-08-18T15:00:00Z",
+    "modified_at": "2026-08-18T16:00:00Z",
+    "owner": "RC",
+    "title": "Clinical operations diligence",
+    "content": "The company has four paid research customers. Annual recurring revenue is 620000 USD. The company has not provided formal regulatory documentation.",
+    "next_step": "Request the regulatory review and customer references."
+  },
+  {
+    "source_record_id": "crm-activity-008",
+    "company_id": "cmp_atlasgrid",
+    "activity_type": "partner_review",
+    "occurred_at": "2026-08-05T18:00:00Z",
+    "modified_at": "2026-08-06T09:10:00Z",
+    "owner": "Maya Chen",
+    "title": "Partner review preparation",
+    "content": "Atlas Grid reported annual recurring revenue of 4.1 million USD. Gross retention was 92 percent. One automotive customer represents 38 percent of revenue.",
+    "next_step": "Review customer concentration and hardware installation costs."
+  },
+  {
+    "source_record_id": "crm-activity-009",
+    "company_id": "cmp_cedarrobotics",
+    "activity_type": "first_meeting",
+    "occurred_at": "2026-08-21T16:00:00Z",
+    "modified_at": "2026-08-21T17:00:00Z",
+    "owner": "RC",
+    "title": "Founder introduction",
+    "content": "The company has two paid warehouse trials. The founders did not provide revenue, burn, or runway data.",
+    "next_step": "Request unit economics and trial conversion data."
+  },
+  {
+    "source_record_id": "crm-activity-010",
+    "company_id": "cmp_prismlegal",
+    "activity_type": "diligence_update",
+    "occurred_at": "2026-08-14T14:30:00Z",
+    "modified_at": "2026-08-14T16:00:00Z",
+    "owner": "Maya Chen",
+    "title": "Security and retention review",
+    "content": "Annual recurring revenue is 1.1 million USD. Net revenue retention is 118 percent. The company has completed a SOC 2 Type I audit.",
+    "next_step": "Confirm the schedule for the SOC 2 Type II audit."
+  },
+  {
+    "source_record_id": "crm-activity-011",
+    "company_id": "cmp_sagebio",
+    "activity_type": "screening_update",
+    "occurred_at": "2026-07-30T13:00:00Z",
+    "modified_at": "2026-07-30T13:20:00Z",
+    "owner": "RC",
+    "title": "Initial screen",
+    "content": "The company has three design partners. The company does not have paid revenue. The founders plan to raise 2 million USD.",
+    "next_step": "Review founder references and data access rights."
+  },
+  {
+    "source_record_id": "crm-activity-012",
+    "company_id": "cmp_quantaledger",
+    "activity_type": "diligence_update",
+    "occurred_at": "2026-08-11T19:00:00Z",
+    "modified_at": "2026-08-12T08:30:00Z",
+    "owner": "Maya Chen",
+    "title": "Finance diligence",
+    "content": "Annual recurring revenue is 780000 USD. The company has 11 customers. Two customers represent 46 percent of revenue.",
+    "next_step": "Request customer references and gross margin data."
+  },
+  {
+    "source_record_id": "crm-activity-013",
+    "company_id": "cmp_relayworks",
+    "activity_type": "first_meeting",
+    "occurred_at": "2026-08-23T15:00:00Z",
+    "modified_at": "2026-08-23T17:00:00Z",
+    "owner": "RC",
+    "title": "Founder meeting",
+    "content": "The company has six paid customers. Annual recurring revenue is 360000 USD. The founders report a 90-day sales cycle.",
+    "next_step": "Review product usage and customer implementation time."
+  },
+  {
+    "source_record_id": "crm-activity-014",
+    "company_id": "cmp_northstarsecurity",
+    "activity_type": "sourcing_note",
+    "occurred_at": "2026-08-25T11:00:00Z",
+    "modified_at": "2026-08-25T12:00:00Z",
+    "owner": "RC",
+    "title": "Inbound company",
+    "content": "The founder sent a short product description. The record does not include revenue, customer, burn, or runway data.",
+    "next_step": "Schedule an introduction and request basic company metrics."
+  }
+]
