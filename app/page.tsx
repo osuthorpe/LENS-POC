@@ -2,12 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ChevronDown,
+  ChevronRight,
   Building2,
   CalendarDays,
   CircleHelp,
   Clock3,
   Database,
   FileText,
+  FileSearch,
+  ExternalLink,
   LoaderCircle,
   MessageSquareText,
   Newspaper,
@@ -24,20 +28,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  extractClaimValues,
+  relevantSourceExcerpt,
+  sourceSupportsValue,
+} from '@/lib/evidence-detail';
 import { fallbackBrief, fallbackCompanies } from '@/lib/fallback-data';
 import type {
   BriefItem,
   BriefResult,
+  ClaimCitation,
+  ClaimValue,
   Company,
   EvidenceState,
   RelationshipStatus,
   SourceReference,
+  SourceDetail,
 } from '@/lib/types';
 
 const sourceIcon = {
@@ -77,6 +90,98 @@ function sourceLabel(type: SourceReference['sourceType']) {
   if (type === 'crm') return 'CRM';
   if (type === 'slack') return 'Slack';
   return type[0].toUpperCase() + type.slice(1);
+}
+
+function stateLabel(state: EvidenceState) {
+  if (state === 'conflict') return 'Values differ';
+  if (state === 'stale') return 'Earlier data';
+  if (state === 'missing') return 'Missing data';
+  if (state === 'unverified') return 'Not confirmed';
+  return 'Confirmed';
+}
+
+function stateGuidance(state: EvidenceState) {
+  if (state === 'conflict') return 'Compare the dated values before you use this fact.';
+  if (state === 'stale') return 'Use the newest dated value. AVIC keeps the earlier value as source history.';
+  if (state === 'missing') return 'Ask for this missing information.';
+  if (state === 'unverified') return 'Confirm this statement before you use it.';
+  return null;
+}
+
+function kindLabel(kind: BriefItem['kind']) {
+  if (kind === 'fact') return 'Source fact';
+  if (kind === 'analysis') return 'Generated analysis';
+  return 'Question';
+}
+
+function evidenceHeading(kind: BriefItem['kind']) {
+  if (kind === 'fact') return 'Evidence for this fact';
+  if (kind === 'analysis') return 'Evidence used for this analysis';
+  return 'Evidence that caused this question';
+}
+
+function valueKindLabel(value: ClaimValue) {
+  if (value.kind === 'money') return 'Money';
+  if (value.kind === 'percent') return 'Percent';
+  if (value.kind === 'duration') return 'Time';
+  if (value.kind === 'date') return 'Date';
+  return 'Count';
+}
+
+function citationRoleLabel(role: ClaimCitation['role']) {
+  if (role === 'supports') return 'Supports';
+  if (role === 'earlier') return 'Earlier value';
+  return 'Context';
+}
+
+function citationRoleStyle(role: ClaimCitation['role']) {
+  if (role === 'supports') return 'border-blue-200 bg-blue-50 text-blue-800';
+  if (role === 'earlier') return 'border-amber-200 bg-amber-50 text-amber-800';
+  return 'border-stone-200 bg-stone-50 text-slate-600';
+}
+
+function humanizeField(value: string) {
+  return value
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function displayRawValue(value: unknown) {
+  if (value === null || value === undefined || value === '') return 'Not specified';
+  if (Array.isArray(value)) return value.map((item) => String(item)).join(', ');
+  if (typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+function externalSourceUrl(locator: string) {
+  try {
+    const url = new URL(locator);
+    if (url.protocol !== 'https:' || url.hostname.endsWith('.example')) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function HighlightedText({ text, values }: { text: string; values: ClaimValue[] }) {
+  if (!values.length) return <>{text}</>;
+  const terms = values
+    .map((value) => value.value)
+    .sort((left, right) => right.length - left.length)
+    .map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const parts = text.split(new RegExp(`(${terms.join('|')})`, 'gi'));
+  const normalized = new Set(values.map((value) => value.value.toLowerCase()));
+  return (
+    <>
+      {parts.map((part, index) =>
+        normalized.has(part.toLowerCase()) ? (
+          <mark className="rounded bg-amber-100 px-0.5 text-inherit" key={`${part}-${index}`}>
+            {part}
+          </mark>
+        ) : part,
+      )}
+    </>
+  );
 }
 
 async function fetchBrief(companyId: string) {
@@ -238,46 +343,18 @@ function CompanyList({
   );
 }
 
-function SourcePills({
-  ids,
-  sources,
-  onOpen,
-}: {
-  ids: string[];
-  sources: SourceReference[];
-  onOpen: (source: SourceReference) => void;
-}) {
-  return (
-    <div className="mt-2.5 flex flex-wrap gap-1.5">
-      {ids.map((id) => {
-        const source = sources.find((item) => item.id === id);
-        if (!source) return null;
-        const Icon = sourceIcon[source.sourceType];
-        return (
-          <button
-            className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50/70 px-2.5 text-[11px] font-medium text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-            key={id}
-            onClick={() => onOpen(source)}
-            title={`Open ${source.title}`}
-            type="button"
-          >
-            <Icon className="h-3 w-3" />
-            {sourceLabel(source.sourceType)} · {formatDate(source.sourceDate)}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function EvidenceItem({
   item,
   sources,
-  onOpen,
+  expanded,
+  onToggle,
+  onOpenSource,
 }: {
   item: BriefItem;
   sources: SourceReference[];
-  onOpen: (source: SourceReference) => void;
+  expanded: boolean;
+  onToggle: () => void;
+  onOpenSource: (source: SourceReference, item: BriefItem) => void;
 }) {
   const StateIcon =
     item.state === 'conflict'
@@ -289,21 +366,177 @@ function EvidenceItem({
           : item.state === 'unverified'
             ? ShieldAlert
             : null;
+  const itemSources = item.sourceIds
+    .map((id) => sources.find((source) => source.id === id))
+    .filter((source): source is SourceReference => Boolean(source));
+  const values = item.values ?? extractClaimValues(item.text);
+  const citations = item.citations ?? itemSources.map((source): ClaimCitation => ({
+    sourceId: source.id,
+    role: item.kind === 'fact'
+      ? (
+          /superseded|old/i.test(source.verificationStatus ?? '') || (
+            (item.state === 'conflict' || item.state === 'stale') &&
+            Boolean(values[0]) &&
+            !sourceSupportsValue(values[0]!, source.content) &&
+            values.some((value) => sourceSupportsValue(value, source.content))
+          )
+            ? 'earlier'
+            : 'supports'
+        )
+      : 'context',
+    excerpt: relevantSourceExcerpt(source.content, item.text),
+    values: values.filter((value) => sourceSupportsValue(value, source.content)),
+  }));
+  const latestLabel = item.sourceDate ? formatDate(item.sourceDate) : 'No source date';
+  const evidenceLabel = itemSources.length === 1
+    ? `Evidence · ${sourceLabel(itemSources[0].sourceType)} · ${latestLabel}`
+    : `Evidence · ${itemSources.length} sources · latest ${latestLabel}`;
+  const panelId = `evidence-${item.id}`;
   return (
     <div className="border-b border-stone-100 py-3.5 first:pt-0 last:border-0 last:pb-0">
       <div className="flex items-start gap-2.5">
         {StateIcon && <StateIcon className={`mt-1 h-4 w-4 shrink-0 ${stateIconStyle[item.state]}`} />}
         <div className="min-w-0 flex-1">
-          {item.state !== 'confirmed' && (
-            <Badge
-              className={`mb-1.5 h-5 rounded-md px-1.5 text-[10px] font-semibold ${stateStyle[item.state]}`}
-              variant="outline"
-            >
-              {item.state}
-            </Badge>
-          )}
+          <div className="mb-1.5 flex flex-wrap gap-1.5">
+            {item.kind === 'analysis' && (
+              <Badge className="h-5 rounded-md border-blue-200 bg-blue-50 px-1.5 text-[10px] font-semibold text-blue-800" variant="outline">
+                Analysis
+              </Badge>
+            )}
+            {item.state !== 'confirmed' && (
+              <Badge
+                className={`h-5 rounded-md px-1.5 text-[10px] font-semibold ${stateStyle[item.state]}`}
+                variant="outline"
+              >
+                {stateLabel(item.state)}
+              </Badge>
+            )}
+          </div>
           <p className="text-[13px] leading-[1.55rem] text-slate-700">{item.text}</p>
-          <SourcePills ids={item.sourceIds} sources={sources} onOpen={onOpen} />
+          <button
+            aria-controls={panelId}
+            aria-expanded={expanded}
+            className={`mt-2.5 inline-flex min-h-10 items-center gap-2 rounded-lg border px-2.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+              expanded
+                ? 'border-blue-200 bg-blue-50 text-blue-800'
+                : 'border-stone-200 bg-stone-50/70 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+            }`}
+            id={`${panelId}-trigger`}
+            onClick={onToggle}
+            type="button"
+          >
+            <FileSearch className="h-3.5 w-3.5" />
+            {evidenceLabel}
+            <ChevronDown className={`h-3.5 w-3.5 transition ${expanded ? 'rotate-180' : ''}`} />
+          </button>
+
+          {expanded && (
+            <section
+              aria-labelledby={`${panelId}-trigger`}
+              className="mt-3 rounded-xl border border-blue-100 bg-[#f7faff] p-3 sm:p-4"
+              id={panelId}
+              role="region"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-slate-800">{evidenceHeading(item.kind)}</p>
+                <Badge className="bg-white text-[10px] text-slate-600" variant="outline">
+                  {kindLabel(item.kind)}
+                </Badge>
+              </div>
+
+              {stateGuidance(item.state) && (
+                <p className="mt-2 rounded-lg bg-white px-3 py-2 text-[11px] font-medium text-slate-700">
+                  {stateGuidance(item.state)}
+                </p>
+              )}
+
+              {values.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[11px] font-semibold text-slate-500">Values in this statement</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {values.map((value) => {
+                      const matchingSources = itemSources.filter((source) =>
+                        sourceSupportsValue(value, source.content),
+                      );
+                      return (
+                        <div className="rounded-lg border border-stone-200 bg-white p-2.5" key={`${value.kind}-${value.value}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-sm font-semibold text-slate-900">{value.value}</span>
+                            <span className="text-[10px] text-slate-500">{valueKindLabel(value)}</span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <span className="w-full text-[10px] text-slate-500">
+                              {matchingSources.length} {matchingSources.length === 1 ? 'source mentions' : 'sources mention'} this value.
+                            </span>
+                            {matchingSources.map((source) => (
+                              <button
+                                className="min-h-8 rounded-md bg-stone-100 px-2 text-[10px] font-medium text-slate-600 transition hover:bg-blue-100 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                                key={source.id}
+                                onClick={() => onOpenSource(source, item)}
+                                type="button"
+                              >
+                                {sourceLabel(source.sourceType)} · {formatDate(source.sourceDate)}
+                              </button>
+                            ))}
+                            {matchingSources.length === 0 && (
+                              <span className="text-[10px] text-slate-500">See the source context below.</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-3 space-y-2">
+                {itemSources.map((source) => {
+                  const Icon = sourceIcon[source.sourceType];
+                  const citation = citations.find((entry) => entry.sourceId === source.id);
+                  const role = citation?.role ?? 'context';
+                  return (
+                    <article className="rounded-lg border border-stone-200 bg-white p-3" key={source.id}>
+                      <div className="flex items-start gap-2.5">
+                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-stone-100 text-slate-600">
+                          <Icon className="h-3.5 w-3.5" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-semibold text-slate-800">{source.title}</p>
+                              <p className="mt-0.5 text-[11px] text-slate-500">
+                                {sourceLabel(source.sourceType)} · <time dateTime={source.sourceDate}>{formatDate(source.sourceDate)}</time>
+                              </p>
+                            </div>
+                            <Badge className={`text-[10px] ${citationRoleStyle(role)}`} variant="outline">
+                              {citationRoleLabel(role)}
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-xs leading-5 text-slate-600">
+                            <HighlightedText text={citation?.excerpt ?? relevantSourceExcerpt(source.content, item.text)} values={values} />
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[10px] text-slate-500">
+                              {source.verificationStatus
+                                ? humanizeField(source.verificationStatus)
+                                : 'Verification is not specified'}
+                            </span>
+                            <button
+                              className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                              onClick={() => onOpenSource(source, item)}
+                              type="button"
+                            >
+                              Open source <ChevronRight className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </div>
@@ -314,12 +547,16 @@ function EvidenceSection({
   title,
   items,
   sources,
-  onOpen,
+  expandedItemId,
+  onToggleItem,
+  onOpenSource,
 }: {
   title: string;
   items: BriefItem[];
   sources: SourceReference[];
-  onOpen: (source: SourceReference) => void;
+  expandedItemId: string | null;
+  onToggleItem: (itemId: string) => void;
+  onOpenSource: (source: SourceReference, item: BriefItem) => void;
 }) {
   return (
     <Card className="border-stone-200/90 bg-white/95 shadow-[0_8px_28px_rgb(34_53_80/4%)]">
@@ -330,7 +567,14 @@ function EvidenceSection({
       </CardHeader>
       <CardContent>
         {items.map((item) => (
-          <EvidenceItem key={item.id} item={item} sources={sources} onOpen={onOpen} />
+          <EvidenceItem
+            expanded={expandedItemId === item.id}
+            item={item}
+            key={item.id}
+            onOpenSource={onOpenSource}
+            onToggle={() => onToggleItem(item.id)}
+            sources={sources}
+          />
         ))}
       </CardContent>
     </Card>
@@ -356,13 +600,6 @@ function BriefSkeleton() {
 
 function CoveragePanel({ brief }: { brief: BriefResult }) {
   const total = brief.coverage.reduce((sum, item) => sum + item.count, 0);
-  const reviewCount = [
-    ...brief.currentState,
-    ...brief.changes,
-    ...brief.risks,
-    ...brief.openQuestions,
-    ...brief.suggestedQuestions,
-  ].filter((item) => item.state !== 'confirmed').length;
   return (
     <aside className="xl:sticky xl:top-20 xl:self-start">
       <Card className="border-stone-200/90 bg-white/95 shadow-[0_8px_28px_rgb(34_53_80/4%)]">
@@ -372,19 +609,17 @@ function CoveragePanel({ brief }: { brief: BriefResult }) {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
                 <ShieldCheck className="h-4 w-4" />
               </span>
-              <CardTitle className="text-sm">Evidence</CardTitle>
+              <CardTitle className="text-sm">Sources</CardTitle>
             </div>
             <Badge
-              className={reviewCount > 0
-                ? 'border-amber-200 bg-amber-50 text-[10px] text-amber-800'
-                : 'border-blue-200 bg-blue-50 text-[10px] text-blue-800'}
+              className="border-blue-200 bg-blue-50 text-[10px] text-blue-800"
               variant="outline"
             >
-              {reviewCount > 0 ? `${reviewCount} to review` : 'Company only'}
+              Selected company
             </Badge>
           </div>
           <p className="text-xs leading-5 text-slate-500">
-            {total} records · through {formatDate(brief.company.latestSourceDate)}
+            {total} imported records · newest {formatDate(brief.company.latestSourceDate)}
           </p>
         </CardHeader>
         <CardContent>
@@ -409,10 +644,16 @@ export default function Home() {
   const [companies, setCompanies] = useState<Company[]>(fallbackCompanies);
   const [brief, setBrief] = useState<BriefResult>(fallbackBrief);
   const [selected, setSelected] = useState<Company>(fallbackCompanies[0]);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<SourceReference | null>(null);
+  const [sourceParentItem, setSourceParentItem] = useState<BriefItem | null>(null);
+  const [sourceDetail, setSourceDetail] = useState<SourceDetail | null>(null);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const [sourceError, setSourceError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'ready' | 'offline' | 'error'>('offline');
   const requestId = useRef(0);
+  const sourceCache = useRef(new Map<string, SourceDetail>());
   const briefMatchesSelection = brief.company.id === selected.id;
   const conflictCount = useMemo(
     () =>
@@ -456,9 +697,42 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!openSource) return;
+    const cacheKey = `${selected.id}:${openSource.id}`;
+    if (sourceCache.current.has(cacheKey)) return;
+
+    const controller = new AbortController();
+    fetch(`/api/sources/${encodeURIComponent(openSource.id)}?companyId=${encodeURIComponent(selected.id)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('The full source record is not available.');
+        return response.json() as Promise<{ source: SourceDetail }>;
+      })
+      .then((data) => {
+        if (data.source.companyId !== selected.id) {
+          throw new Error('The source belongs to a different company.');
+        }
+        sourceCache.current.set(cacheKey, data.source);
+        setSourceDetail(data.source);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setSourceError(error instanceof Error ? error.message : 'The full source record is not available.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSourceLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [openSource, selected.id]);
+
   async function generateBrief(company = selected) {
     const currentRequest = requestId.current + 1;
     requestId.current = currentRequest;
+    setExpandedItemId(null);
+    closeSource();
     setSelected(company);
     setLoading(true);
     try {
@@ -477,6 +751,31 @@ export default function Home() {
 
   const showBrief = !loading && briefMatchesSelection;
   const dataWarning = status !== 'ready';
+  const sourceValues = sourceParentItem?.values ??
+    (sourceParentItem ? extractClaimValues(sourceParentItem.text) : []);
+  const sourceContent = sourceDetail?.normalizedContent ?? openSource?.content ?? '';
+  const originalUrl = openSource ? externalSourceUrl(openSource.locator) : null;
+
+  function toggleEvidence(itemId: string) {
+    setExpandedItemId((current) => current === itemId ? null : itemId);
+  }
+
+  function openFullSource(source: SourceReference, item: BriefItem) {
+    const cached = sourceCache.current.get(`${selected.id}:${source.id}`) ?? null;
+    setSourceDetail(cached);
+    setSourceError(null);
+    setSourceLoading(!cached);
+    setSourceParentItem(item);
+    setOpenSource(source);
+  }
+
+  function closeSource() {
+    setOpenSource(null);
+    setSourceParentItem(null);
+    setSourceDetail(null);
+    setSourceError(null);
+    setSourceLoading(false);
+  }
 
   return (
     <main className="min-h-screen text-slate-900">
@@ -576,14 +875,16 @@ export default function Home() {
                 <AlertTitle>
                   {dataWarning
                     ? 'Live data is unavailable'
-                    : `${conflictCount} source conflict needs review`}
+                    : conflictCount === 1
+                      ? '1 statement has values that differ'
+                      : `${conflictCount} statements have values that differ`}
                 </AlertTitle>
                 <AlertDescription className="text-amber-800">
                   {dataWarning
                     ? showBrief
                       ? 'The last verified brief remains visible.'
                       : 'Select Refresh brief to try again.'
-                    : 'The brief keeps both values and their sources.'}
+                    : 'Open Evidence and compare the dated values before you use the statement.'}
                 </AlertDescription>
               </Alert>
             )}
@@ -595,33 +896,43 @@ export default function Home() {
                 ) : (
                   <>
                     <EvidenceSection
+                      expandedItemId={expandedItemId}
                       items={brief.changes}
-                      onOpen={setOpenSource}
+                      onOpenSource={openFullSource}
+                      onToggleItem={toggleEvidence}
                       sources={brief.sources}
                       title="What changed"
                     />
                     <EvidenceSection
+                      expandedItemId={expandedItemId}
                       items={brief.currentState}
-                      onOpen={setOpenSource}
+                      onOpenSource={openFullSource}
+                      onToggleItem={toggleEvidence}
                       sources={brief.sources}
                       title="Current state"
                     />
                     <EvidenceSection
+                      expandedItemId={expandedItemId}
                       items={brief.risks}
-                      onOpen={setOpenSource}
+                      onOpenSource={openFullSource}
+                      onToggleItem={toggleEvidence}
                       sources={brief.sources}
                       title="Risks"
                     />
                     <div className="grid gap-4 2xl:grid-cols-2">
                       <EvidenceSection
+                        expandedItemId={expandedItemId}
                         items={brief.openQuestions}
-                        onOpen={setOpenSource}
+                        onOpenSource={openFullSource}
+                        onToggleItem={toggleEvidence}
                         sources={brief.sources}
                         title="Open questions"
                       />
                       <EvidenceSection
+                        expandedItemId={expandedItemId}
                         items={brief.suggestedQuestions}
-                        onOpen={setOpenSource}
+                        onOpenSource={openFullSource}
+                        onToggleItem={toggleEvidence}
                         sources={brief.sources}
                         title="Questions to ask"
                       />
@@ -639,35 +950,129 @@ export default function Home() {
         </div>
       </div>
 
-      <Dialog open={Boolean(openSource)} onOpenChange={(open) => !open && setOpenSource(null)}>
-        <DialogContent className="max-h-[84vh] overflow-hidden border-stone-200 bg-[#fbfaf7] sm:max-w-2xl">
+      <Dialog open={Boolean(openSource)} onOpenChange={(open) => !open && closeSource()}>
+        <DialogContent className="left-auto right-0 top-0 h-dvh max-h-dvh max-w-full translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)] gap-0 rounded-none border-stone-200 bg-[#fbfaf7] p-0 sm:max-w-[560px]">
           {openSource && (
             <>
-              <DialogHeader>
-                <div className="mb-1.5 flex items-center gap-2">
+              <DialogHeader className="border-b border-stone-200 px-5 py-4 pr-12">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge className="bg-white text-[10px]" variant="outline">
                     {sourceLabel(openSource.sourceType)}
                   </Badge>
-                  <span className="text-[11px] text-slate-500">{formatDate(openSource.sourceDate)}</span>
+                  <time className="text-[11px] text-slate-500" dateTime={openSource.sourceDate}>
+                    {formatDate(openSource.sourceDate)}
+                  </time>
+                  <span className="text-[11px] text-slate-500">
+                    {openSource.verificationStatus
+                      ? humanizeField(openSource.verificationStatus)
+                      : 'Verification is not specified'}
+                  </span>
                 </div>
-                <DialogTitle className="font-display text-[28px] font-normal leading-tight text-[#162d4e]">
+                <DialogTitle className="font-display text-[26px] font-normal leading-tight text-[#162d4e]">
                   {openSource.title}
                 </DialogTitle>
+                <DialogDescription className="text-xs">
+                  Full stored source for the selected statement.
+                </DialogDescription>
               </DialogHeader>
-              <ScrollArea className="max-h-[52vh] pr-4">
-                <div className="rounded-xl border border-stone-200 bg-white p-4 text-[13px] leading-6 text-slate-700">
-                  {openSource.content}
+              <ScrollArea className="min-h-0 px-5 py-4">
+                <div aria-live="polite" className="mb-3 min-h-5 text-[11px] text-slate-500">
+                  {sourceLoading && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Loading the full source record
+                    </span>
+                  )}
+                  {sourceError && (
+                    <span className="text-amber-700">{sourceError} The imported source text remains visible.</span>
+                  )}
                 </div>
-                <div className="mt-3 grid gap-2 text-[11px] sm:grid-cols-2">
-                  <div className="rounded-lg bg-stone-100 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500">Source</p>
-                    <p className="mt-1 break-words text-slate-700">{openSource.locator}</p>
+                {sourceParentItem && (
+                  <section className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
+                    <p className="text-[11px] font-semibold text-blue-800">Selected statement</p>
+                    <p className="mt-1.5 text-xs leading-5 text-slate-700">{sourceParentItem.text}</p>
+                  </section>
+                )}
+
+                <section>
+                  <p className="text-xs font-semibold text-slate-800">Source content</p>
+                  <div className="mt-2 whitespace-pre-wrap rounded-xl border border-stone-200 bg-white p-4 text-[13px] leading-6 text-slate-700">
+                    <HighlightedText text={sourceContent} values={sourceValues} />
                   </div>
-                  <div className="rounded-lg bg-stone-100 p-3">
-                    <p className="text-[11px] font-semibold text-slate-500">Verification</p>
-                    <p className="mt-1 text-slate-700">{openSource.verificationStatus ?? 'Not specified'}</p>
+                </section>
+
+                {sourceDetail?.facts && sourceDetail.facts.length > 0 && (
+                  <section className="mt-4">
+                    <p className="text-xs font-semibold text-slate-800">Structured values</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {sourceDetail.facts.map((fact) => (
+                        <div className="rounded-lg border border-stone-200 bg-white p-3" key={`${fact.key}-${fact.value}`}>
+                          <p className="text-[10px] text-slate-500">{humanizeField(fact.key)}</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-900">{fact.value}</p>
+                          {fact.date && (
+                            <time className="mt-1 block text-[10px] text-slate-500" dateTime={fact.date}>
+                              {formatDate(fact.date)}
+                            </time>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                <details className="group mt-4 rounded-xl border border-stone-200 bg-white">
+                  <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3.5 text-xs font-semibold text-slate-800">
+                    Record details
+                    <ChevronDown className="h-4 w-4 text-slate-500 transition group-open:rotate-180" />
+                  </summary>
+                  <div className="border-t border-stone-100 px-3.5 py-3 text-[11px]">
+                    <dl className="grid gap-2 sm:grid-cols-2">
+                      {[
+                        ['Source date', sourceDetail?.sourceDate ?? openSource.sourceDate],
+                        ['Event date', sourceDetail?.eventDate],
+                        ['Publication date', sourceDetail?.publicationDate],
+                        ['Modified date', sourceDetail?.modifiedDate],
+                        ['Import date', sourceDetail?.ingestedAt],
+                        ['Verification date', sourceDetail?.verifiedAt],
+                      ].filter((entry): entry is [string, string] => Boolean(entry[1])).map(([label, value]) => (
+                        <div className="rounded-md bg-stone-50 p-2.5" key={label}>
+                          <dt className="text-slate-500">{label}</dt>
+                          <dd className="mt-0.5 font-medium text-slate-700">{formatDate(value)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <div className="mt-2 rounded-md bg-stone-50 p-2.5">
+                      <p className="text-slate-500">Source location</p>
+                      <p className="mt-0.5 break-words font-medium text-slate-700">{openSource.locator}</p>
+                    </div>
+                    {originalUrl && (
+                      <a
+                        className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-md px-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                        href={originalUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Open original source <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                   </div>
-                </div>
+                </details>
+
+                {sourceDetail?.rawContent && Object.keys(sourceDetail.rawContent).length > 0 && (
+                  <details className="group mt-3 rounded-xl border border-stone-200 bg-white">
+                    <summary className="flex min-h-11 list-none items-center justify-between gap-3 px-3.5 text-xs font-semibold text-slate-800">
+                      Original record
+                      <ChevronDown className="h-4 w-4 text-slate-500 transition group-open:rotate-180" />
+                    </summary>
+                    <dl className="border-t border-stone-100 px-3.5 py-3 text-[11px]">
+                      {Object.entries(sourceDetail.rawContent).map(([key, value]) => (
+                        <div className="border-b border-stone-100 py-2 last:border-0" key={key}>
+                          <dt className="font-semibold text-slate-500">{humanizeField(key)}</dt>
+                          <dd className="mt-1 whitespace-pre-wrap break-words text-slate-700">{displayRawValue(value)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                )}
               </ScrollArea>
             </>
           )}

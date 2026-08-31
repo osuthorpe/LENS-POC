@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { withTransaction } from '@/lib/db';
+import {
+  extractClaimValues,
+  relevantSourceExcerpt,
+  sourceSupportsValue,
+} from '@/lib/evidence-detail';
 import type { RetrievedEvidence } from '@/lib/retrieval';
 import type { BriefItem, BriefResult, Company, EvidenceState } from '@/lib/types';
 
@@ -15,15 +20,37 @@ function item(
     .map((sourceId) => evidence.find((record) => record.id === sourceId)?.sourceDate)
     .filter((date): date is string => Boolean(date))
     .sort();
+  const validSourceIds = sourceIds.filter((sourceId) =>
+    evidence.some((record) => record.id === sourceId),
+  );
+  const values = extractClaimValues(text);
+  const citations = validSourceIds.map((sourceId) => {
+    const record = evidence.find((item) => item.id === sourceId)!;
+    const firstValue = values[0];
+    const mentionsAnotherValue = values.some((value) => sourceSupportsValue(value, record.content));
+    const earlier = /superseded|old/i.test(record.verificationStatus ?? '') || (
+      kind === 'fact' &&
+      (state === 'conflict' || state === 'stale') &&
+      Boolean(firstValue) &&
+      !sourceSupportsValue(firstValue!, record.content) &&
+      mentionsAnotherValue
+    );
+    return {
+      sourceId,
+      role: kind === 'fact' ? (earlier ? 'earlier' as const : 'supports' as const) : 'context' as const,
+      excerpt: relevantSourceExcerpt(record.content, text),
+      values: values.filter((value) => sourceSupportsValue(value, record.content)),
+    };
+  });
   return {
     id,
     text,
-    sourceIds: sourceIds.filter((sourceId) =>
-      evidence.some((record) => record.id === sourceId),
-    ),
+    sourceIds: validSourceIds,
     sourceDate: dates.at(-1) ?? null,
     kind,
     state,
+    values,
+    citations,
   };
 }
 
@@ -60,7 +87,7 @@ function genericBrief(company: Company, evidence: RetrievedEvidence[]) {
     risks: riskRecords.map((record, index) =>
       item(
         `risk-${index + 1}`,
-        `This source identifies an item that needs review: ${firstSentence(record.normalizedContent)}`,
+        `This source describes a possible risk: ${firstSentence(record.normalizedContent)}`,
         [record.id],
         evidence,
         'analysis',
@@ -118,7 +145,7 @@ function vectorForgeBrief(evidence: RetrievedEvidence[]) {
 function lumenOpsBrief(evidence: RetrievedEvidence[]) {
   return {
     currentState: [
-      item('current-1', 'The company reports 9 months of runway. The January record that states 18 months is old.', ['meeting-002', 'crm-activity-005', 'crm-activity-004', 'slack-004'], evidence, 'fact', 'stale'),
+      item('current-1', 'The newest record reports 9 months of runway. An earlier January record reports 18 months.', ['meeting-002', 'crm-activity-005', 'crm-activity-004', 'slack-004'], evidence, 'fact', 'stale'),
       item('current-2', 'Monthly recurring revenue is 142000 USD. Monthly burn is 310000 USD.', ['meeting-002', 'crm-activity-005'], evidence),
       item('current-3', 'The largest customer represents 31 percent of monthly recurring revenue.', ['meeting-002', 'crm-activity-006'], evidence),
     ],
@@ -251,6 +278,17 @@ export function validateCitations(brief: BriefResult) {
     for (const sourceId of briefItem.sourceIds) {
       if (!sourceIds.has(sourceId)) {
         throw new Error(`Brief item ${briefItem.id} has an invalid source.`);
+      }
+    }
+    if (briefItem.citations) {
+      const citationIds = new Set(briefItem.citations.map((citation) => citation.sourceId));
+      if (citationIds.size !== briefItem.sourceIds.length) {
+        throw new Error(`Brief item ${briefItem.id} does not cite each source.`);
+      }
+      for (const sourceId of briefItem.sourceIds) {
+        if (!citationIds.has(sourceId)) {
+          throw new Error(`Brief item ${briefItem.id} does not cite source ${sourceId}.`);
+        }
       }
     }
   }

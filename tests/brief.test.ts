@@ -36,18 +36,26 @@ describe('brief rules', () => {
       'meeting-001', 'crm-activity-002', 'slack-001', 'crm-activity-001',
       'slack-017', 'crm-activity-003', 'slack-003', 'slack-002',
     ]);
+    const earlierRecord = records.find((record) => record.id === 'crm-activity-001')!;
+    earlierRecord.content = 'Annual recurring revenue was 3.8 million USD.';
+    earlierRecord.normalizedContent = earlierRecord.content;
     const brief = buildBrief(company, records);
     expect(brief.currentState.some((item) => item.state === 'conflict')).toBe(true);
+    expect(brief.currentState.every((item) => item.citations?.length === item.sourceIds.length)).toBe(true);
+    expect(
+      brief.currentState[0].citations?.find((citation) => citation.sourceId === 'crm-activity-001')?.role,
+    ).toBe('earlier');
     expect(() => validateCitations(brief)).not.toThrow();
   });
 
-  it('shows the LumenOps runway change as old data', () => {
+  it('shows the LumenOps runway history', () => {
     const company = fallbackCompanies.find((item) => item.id === 'cmp_lumenops')!;
     const records = evidence(company.id, [
       'meeting-002', 'crm-activity-005', 'crm-activity-004', 'slack-004',
       'crm-activity-006', 'slack-018', 'slack-005',
     ]);
     const brief = buildBrief(company, records);
+    expect(brief.currentState.some((item) => item.text.includes('newest record'))).toBe(true);
     expect(brief.changes.some((item) => item.text.includes('18 months') && item.text.includes('9 months'))).toBe(true);
     expect(brief.changes.some((item) => item.state === 'stale')).toBe(true);
   });

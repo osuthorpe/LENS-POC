@@ -98,7 +98,10 @@ The checksum makes the import idempotent. An import does not change a record whe
 6. The citation check confirms each source ID.
 7. The isolation check confirms each evidence record has the selected company ID.
 8. The application records the retrieval input, evidence set, result, and time.
-9. The interface shows the brief and the source context.
+9. The interface shows a compact brief.
+10. RC opens one statement to see its values, evidence role, and source excerpts.
+11. The source API checks the selected company ID before it returns source detail.
+12. RC opens one source to see the stored source content, dates, location, structured facts, and original record.
 
 ## Retrieval Rank
 

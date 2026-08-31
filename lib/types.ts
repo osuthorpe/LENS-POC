@@ -6,6 +6,20 @@ export type EvidenceState =
   | 'missing'
   | 'unverified';
 
+export type ClaimValueKind = 'money' | 'percent' | 'duration' | 'date' | 'count';
+
+export interface ClaimValue {
+  kind: ClaimValueKind;
+  value: string;
+}
+
+export interface ClaimCitation {
+  sourceId: string;
+  role: 'supports' | 'earlier' | 'context';
+  excerpt: string;
+  values: ClaimValue[];
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -33,6 +47,27 @@ export interface SourceReference {
   verificationStatus: string | null;
 }
 
+export interface SourceDetail extends SourceReference {
+  companyId: string;
+  eventDate: string | null;
+  publicationDate: string | null;
+  modifiedDate: string | null;
+  ingestedAt: string;
+  verifiedAt: string | null;
+  accessMetadata: Record<string, unknown>;
+  sourceQuality: number;
+  normalizedContent: string;
+  rawContent: Record<string, unknown>;
+  facts: SourceFact[];
+}
+
+export interface SourceFact {
+  key: string;
+  value: string;
+  date: string | null;
+  verificationStatus: string | null;
+}
+
 export interface BriefItem {
   id: string;
   text: string;
@@ -40,6 +75,8 @@ export interface BriefItem {
   sourceDate: string | null;
   state: EvidenceState;
   kind: 'fact' | 'analysis' | 'question';
+  values?: ClaimValue[];
+  citations?: ClaimCitation[];
 }
 
 export interface BriefResult {

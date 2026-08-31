@@ -51,6 +51,8 @@ The brief contains these sections:
 6. **Suggested questions:** Questions that RC can ask in the next discussion.
 7. **Sources and coverage:** Source dates, source references, and known gaps.
 
+The first view shows the statement, evidence state, source count, and newest source date. Each warning tells RC what action he can take. RC can open a statement to see its key values and supporting records. RC can open a supporting record to see the imported source content, record dates, source location, and original fields.
+
 The product must identify generated analysis. The product must separate this analysis from source facts. The product prepares evidence for a decision. The product does not make the decision.
 
 ## User Stories and Acceptance Criteria
