@@ -1,5 +1,11 @@
 import { pool } from '@/lib/db';
-import { localEmbedding } from '@/lib/ingestion';
+import {
+  embedText,
+  openAiEmbeddingProvider,
+  toVectorLiteral,
+  validateEmbedding,
+  type EmbeddingProvider,
+} from '@/lib/embeddings';
 import type { SourceReference } from '@/lib/types';
 
 export interface RetrievedEvidence extends SourceReference {
@@ -24,12 +30,53 @@ export const DEFAULT_RETRIEVAL_QUERY = [
   'missing information',
 ].join(' ');
 
+const QUERY_CACHE_LIMIT = 16;
+let queryEmbeddingCaches = new WeakMap<
+  EmbeddingProvider,
+  Map<string, Promise<number[]>>
+>();
+
+export function clearQueryEmbeddingCache() {
+  queryEmbeddingCaches = new WeakMap();
+}
+
+async function getQueryEmbedding(
+  query: string,
+  provider: EmbeddingProvider,
+) {
+  let cache = queryEmbeddingCaches.get(provider);
+  if (!cache) {
+    cache = new Map();
+    queryEmbeddingCaches.set(provider, cache);
+  }
+  const cached = cache.get(query);
+  if (cached) {
+    cache.delete(query);
+    cache.set(query, cached);
+    return cached;
+  }
+
+  const request = embedText(query, provider).catch((error) => {
+    cache.delete(query);
+    throw error;
+  });
+  if (cache.size >= QUERY_CACHE_LIMIT) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey) cache.delete(oldestKey);
+  }
+  cache.set(query, request);
+  return request;
+}
+
 export async function retrieveEvidence(
   companyId: string,
   query = DEFAULT_RETRIEVAL_QUERY,
   limit = 30,
+  provider: EmbeddingProvider = openAiEmbeddingProvider,
 ) {
-  const queryVector = `[${localEmbedding(query).join(',')}]`;
+  const queryEmbedding = await getQueryEmbedding(query, provider);
+  validateEmbedding(queryEmbedding, provider.dimensions, 0);
+  const queryVector = toVectorLiteral(queryEmbedding);
   const result = await pool.query<{
     id: string;
     company_id: string;
@@ -66,13 +113,17 @@ export async function retrieveEvidence(
         ) AS score
       FROM source_records sr
       JOIN document_chunks dc ON dc.source_record_id = sr.id
-      WHERE sr.company_id = $1 AND dc.company_id = $1
+      WHERE sr.company_id = $1
+        AND dc.company_id = $1
+        AND dc.embedding IS NOT NULL
+        AND dc.embedding_model = $5
+        AND dc.embedding_dimensions = $6
       GROUP BY sr.id
     )
     SELECT * FROM ranked_chunks
     ORDER BY score DESC, source_date DESC NULLS LAST
     LIMIT $4`,
-    [companyId, query, queryVector, limit],
+    [companyId, query, queryVector, limit, provider.model, provider.dimensions],
   );
 
   return result.rows.map((row): RetrievedEvidence => ({

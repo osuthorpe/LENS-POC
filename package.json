@@ -12,11 +12,12 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
-    "db:migrate": "tsx scripts/migrate.ts",
-    "data:import": "tsx scripts/import-data.ts",
+    "db:migrate": "node --env-file-if-exists=.env.local --import tsx scripts/migrate.ts",
+    "data:import": "node --env-file-if-exists=.env.local --import tsx scripts/import-data.ts",
     "setup": "npm run db:up && npm run db:migrate && npm run data:import",
     "test": "vitest run",
-    "verify:v1": "tsx scripts/verify-v1.ts"
+    "verify:embeddings": "node --env-file-if-exists=.env.local --import tsx scripts/verify-embeddings.ts",
+    "verify:v1": "node --env-file-if-exists=.env.local --import tsx scripts/verify-v1.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -24,6 +25,7 @@
     "gray-matter": "^4.0.3",
     "lucide-react": "^1.38.0",
     "next": "^16.3.3",
+    "openai": "^7.8.0",
     "pg": "^8.23.0",
     "radix-ui": "^1.6.7",
     "react": "19.2.6",

@@ -12,7 +12,7 @@ V1 uses fictional demo records. It does not connect to production source systems
 - 59 source records
 - CRM, meeting, Slack, and news source types
 - PostgreSQL as the source of truth
-- pgvector for local vector search
+- pgvector for exact embedding search
 - PostgreSQL full-text search
 - Company-level evidence isolation
 - Source context for each brief item
@@ -28,6 +28,19 @@ You need these tools:
 - Node.js 22.13 or later
 - Docker Desktop
 - npm
+- An OpenAI API key
+
+Copy the environment example before the first setup:
+
+```bash
+cp .env.example .env.local
+```
+
+Set `OPENAI_API_KEY` in `.env.local`. The import command requires this key.
+
+Keep the default `DATABASE_URL` for the local database. Change this value only if your database uses a different address.
+
+Do not commit `.env.local`. Git ignores this file.
 
 Run these commands from the repository root:
 
@@ -39,19 +52,7 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-The setup command starts PostgreSQL. It creates the schema. It then imports the demo data.
-
-## Use a Different Database Address
-
-Copy the environment example if your database does not use the default address:
-
-```bash
-cp .env.example .env.local
-```
-
-Then change `DATABASE_URL` in `.env.local`.
-
-Do not commit `.env.local`. Git ignores this file.
+The setup command starts PostgreSQL. It creates the schema. It then imports the demo data and creates embeddings.
 
 ## Import the Demo Data Again
 
@@ -61,7 +62,7 @@ Run this command:
 npm run data:import
 ```
 
-The import uses a content checksum. A second import does not create duplicate records. A changed fixture updates its record, chunks, facts, and vectors.
+The import uses a content checksum. A second import does not create duplicate records. It does not request embeddings for unchanged chunks. A changed fixture updates its record, chunks, facts, and embeddings.
 
 ## Verify V1
 
@@ -71,6 +72,7 @@ Run these checks:
 npm test
 npm run lint
 npm run build
+npm run verify:embeddings
 npm run verify:v1
 ```
 
@@ -80,7 +82,7 @@ The V1 verification checks these items:
 - Each brief is ready in less than 30 seconds.
 - Each brief uses evidence for one company only.
 - Each brief item has valid citations.
-- All 59 chunks have vectors.
+- All 59 chunks have current OpenAI embeddings.
 - VectorForge shows the revenue conflict.
 - LumenOps uses the current runway value and keeps the earlier value in Evidence.
 - The feedback queue links each item to one saved brief and company.
@@ -89,13 +91,15 @@ The V1 verification checks these items:
 
 ## Data Flow
 
-The import process reads files from `demo_data/raw`. It keeps the original record in PostgreSQL. It also creates standard text, facts, chunks, checksums, and local vectors.
+The import process reads files from `demo_data/raw`. It keeps the original record in PostgreSQL. It also creates standard text, facts, chunks, and checksums. It sends each fictional text chunk to the OpenAI Embeddings API. The API uses `text-embedding-3-large`. It returns a 1,536-value embedding. PostgreSQL stores the embedding.
 
-The brief request applies a hard company filter first. It then combines full-text rank, vector similarity, source quality, and source date. The brief engine uses only the returned evidence. It records the retrieval input, evidence rank, result, and generation time. The engine shows `Update needed` when every available source for a fact is marked as old. A current source removes this warning.
+The retrieval service sends the fixed query text to the OpenAI Embeddings API. It uses the returned embedding to search the stored embeddings. The database applies a hard company filter before it ranks evidence. The rank combines full-text rank, embedding similarity, source quality, and source date.
+
+The brief engine uses only the returned evidence. It uses fixed local rules. It does not call a generation model. It records the retrieval input, evidence rank, result, and generation time. The engine shows `Update needed` when every available source for a fact is marked as old. A current source removes this warning.
 
 The interface can send feedback for one statement or the full brief. The server checks the saved brief and company. It copies the saved statement and source IDs into the review item. The browser cannot set the priority or status.
 
-V1 creates vectors on the local computer. V1 does not send source records to an external model. The local OpenAI key stays unused until the team approves the source data that a model can receive.
+V1 sends fictional chunk text and query text to the OpenAI Embeddings API. It does not send raw JSON records or generated briefs. PostgreSQL stores and searches the embeddings on the local computer.
 
 See [the architecture document](docs/architecture.md) for more information.
 
@@ -110,6 +114,7 @@ See [the architecture document](docs/architecture.md) for more information.
 | `npm run db:migrate` | Create or update the database schema. |
 | `npm run data:import` | Import the demo source files. |
 | `npm test` | Run the unit tests. |
+| `npm run verify:embeddings` | Check one live semantic embedding request. |
 | `npm run verify:v1` | Check the V1 acceptance conditions against the database. |
 
 ## Important Files
@@ -118,7 +123,8 @@ See [the architecture document](docs/architecture.md) for more information.
 | --- | --- |
 | `app/page.tsx` | Main company brief interface |
 | `app/api` | Company, brief, source, feedback, import, and health endpoints |
-| `lib/ingestion.ts` | File adapters, normalization, checksums, chunks, facts, and vectors |
+| `lib/embeddings.ts` | OpenAI embedding requests and validation |
+| `lib/ingestion.ts` | File adapters, normalization, checksums, chunks, facts, and embeddings |
 | `lib/retrieval.ts` | Company-filtered hybrid retrieval |
 | `lib/brief.ts` | Evidence-based brief generation and citation checks |
 | `db/schema.sql` | PostgreSQL and pgvector schema |

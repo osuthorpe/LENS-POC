@@ -4,6 +4,13 @@ import { basename, join } from 'node:path';
 import matter from 'gray-matter';
 import { z } from 'zod';
 import { pool, withTransaction } from '@/lib/db';
+import {
+  EMBEDDING_DIMENSIONS,
+  openAiEmbeddingProvider,
+  toVectorLiteral,
+  validateEmbedding,
+  type EmbeddingProvider,
+} from '@/lib/embeddings';
 
 const companySchema = z.object({
   source_record_id: z.string(),
@@ -85,14 +92,32 @@ export function checksum(value: unknown) {
 }
 
 export function chunkText(text: string, maximumLength = 1400) {
+  if (!Number.isInteger(maximumLength) || maximumLength < 1) {
+    throw new Error('The maximum chunk length must be a positive integer.');
+  }
   const paragraphs = text
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
+  const segments = paragraphs.flatMap((paragraph) => {
+    if (paragraph.length <= maximumLength) return [paragraph];
+    const parts: string[] = [];
+    let remaining = paragraph;
+    while (remaining.length > maximumLength) {
+      const spaceIndex = remaining.lastIndexOf(' ', maximumLength);
+      const splitIndex = spaceIndex >= Math.floor(maximumLength / 2)
+        ? spaceIndex
+        : maximumLength;
+      parts.push(remaining.slice(0, splitIndex).trimEnd());
+      remaining = remaining.slice(splitIndex).trimStart();
+    }
+    if (remaining) parts.push(remaining);
+    return parts;
+  });
   const chunks: string[] = [];
   let current = '';
 
-  for (const paragraph of paragraphs) {
+  for (const paragraph of segments) {
     if (current && current.length + paragraph.length + 2 > maximumLength) {
       chunks.push(current);
       current = paragraph;
@@ -102,19 +127,6 @@ export function chunkText(text: string, maximumLength = 1400) {
   }
   if (current) chunks.push(current);
   return chunks.length ? chunks : [text];
-}
-
-export function localEmbedding(text: string, dimensions = 1536) {
-  const vector = Array.from({ length: dimensions }, () => 0);
-  const words = text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
-  for (const word of words) {
-    const digest = createHash('sha256').update(word).digest();
-    const index = digest.readUInt16BE(0) % dimensions;
-    const sign = digest[2] % 2 === 0 ? 1 : -1;
-    vector[index] += sign;
-  }
-  const length = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0)) || 1;
-  return vector.map((value) => value / length);
 }
 
 async function readJson(path: string) {
@@ -282,22 +294,105 @@ function extractFacts(record: SourceRecordInput) {
   return facts;
 }
 
-export async function importFixtures(root: string) {
-  const fixtures = await normalizeFixtures(root);
-  const existing = await pool.query<{ id: string; checksum: string }>(
-    'SELECT id, checksum FROM source_records',
+export interface StoredChunk {
+  id: string;
+  source_record_id: string;
+  content: string;
+  has_embedding: boolean;
+  embedding_model: string | null;
+  embedding_dimensions: number | null;
+  embedding_input_checksum: string | null;
+}
+
+export interface ChunkEntry {
+  id: string;
+  record: SourceRecordInput;
+  content: string;
+  position: number;
+  inputChecksum: string;
+}
+
+export function embeddingIsCurrent(
+  stored: StoredChunk | undefined,
+  entry: ChunkEntry,
+  provider: EmbeddingProvider,
+) {
+  return Boolean(
+    stored?.has_embedding &&
+    stored.content === entry.content &&
+    stored.embedding_model === provider.model &&
+    stored.embedding_dimensions === provider.dimensions &&
+    stored.embedding_input_checksum === entry.inputChecksum,
   );
-  const knownChecksums = new Map(existing.rows.map((row) => [row.id, row.checksum]));
+}
+
+export async function importFixtures(
+  root: string,
+  provider: EmbeddingProvider = openAiEmbeddingProvider,
+) {
+  if (provider.dimensions !== EMBEDDING_DIMENSIONS) {
+    throw new Error(`The database requires ${EMBEDDING_DIMENSIONS}-value embeddings.`);
+  }
+  const fixtures = await normalizeFixtures(root);
+  const [existingRecords, existingChunks] = await Promise.all([
+    pool.query<{ id: string; checksum: string }>(
+      'SELECT id, checksum FROM source_records',
+    ),
+    pool.query<StoredChunk>(`SELECT
+      id,
+      source_record_id,
+      content,
+      embedding IS NOT NULL AS has_embedding,
+      embedding_model,
+      embedding_dimensions,
+      embedding_input_checksum
+    FROM document_chunks`),
+  ]);
+  const knownChecksums = new Map(
+    existingRecords.rows.map((row) => [row.id, row.checksum]),
+  );
   const changedRecords = fixtures.records.filter(
     (record) => knownChecksums.get(record.id) !== record.checksum,
   );
-  const chunkEntries = changedRecords.flatMap((record) =>
+  const changedRecordIds = new Set(changedRecords.map((record) => record.id));
+  const allChunkEntries = fixtures.records.flatMap((record): ChunkEntry[] =>
     chunkText(record.normalizedContent).map((content, position) => ({
+      id: `${record.id}:chunk:${position}`,
       record,
       content,
       position,
+      inputChecksum: checksum(content),
     })),
   );
+  const chunksByRecord = Map.groupBy(
+    allChunkEntries,
+    (entry) => entry.record.id,
+  );
+  const storedChunksByRecord = Map.groupBy(
+    existingChunks.rows,
+    (entry) => entry.source_record_id,
+  );
+  const rebuildRecords = fixtures.records.filter((record) => {
+    if (changedRecordIds.has(record.id)) return true;
+    const entries = chunksByRecord.get(record.id) ?? [];
+    const stored = storedChunksByRecord.get(record.id) ?? [];
+    if (entries.length !== stored.length) return true;
+    const storedById = new Map(stored.map((entry) => [entry.id, entry]));
+    return entries.some(
+      (entry) => !embeddingIsCurrent(storedById.get(entry.id), entry, provider),
+    );
+  });
+  const rebuildRecordIds = new Set(rebuildRecords.map((record) => record.id));
+  const chunkEntries = allChunkEntries.filter((entry) =>
+    rebuildRecordIds.has(entry.record.id),
+  );
+
+  const embeddings = await provider.embedTexts(
+    chunkEntries.map((entry) => entry.content),
+  );
+  if (embeddings.length !== chunkEntries.length) {
+    throw new Error('The embedding response did not include every text chunk.');
+  }
 
   await withTransaction(async (client) => {
     for (const company of fixtures.companies) {
@@ -364,24 +459,32 @@ export async function importFixtures(root: string) {
       );
     }
 
-    for (const record of changedRecords) {
+    for (const record of rebuildRecords) {
       await client.query('DELETE FROM document_chunks WHERE source_record_id = $1', [record.id]);
       await client.query('DELETE FROM facts WHERE source_record_id = $1', [record.id]);
     }
 
-    for (const entry of chunkEntries) {
-      const embedding = `[${localEmbedding(entry.content).join(',')}]`;
+    for (let index = 0; index < chunkEntries.length; index += 1) {
+      const entry = chunkEntries[index];
+      const embedding = embeddings[index];
+      if (!entry || !embedding) {
+        throw new Error('The embedding result is incomplete.');
+      }
+      validateEmbedding(embedding, provider.dimensions, index);
       await client.query(
         `INSERT INTO document_chunks (
-          id, source_record_id, company_id, position, content, token_count, embedding
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7::vector)`,
-        [`${entry.record.id}:chunk:${entry.position}`, entry.record.id,
+          id, source_record_id, company_id, position, content, token_count,
+          embedding, embedding_model, embedding_dimensions,
+          embedding_input_checksum, embedded_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7::vector,$8,$9,$10,NOW())`,
+        [entry.id, entry.record.id,
           entry.record.companyId, entry.position, entry.content,
-          Math.ceil(entry.content.length / 4), embedding],
+          Math.ceil(entry.content.length / 4), toVectorLiteral(embedding),
+          provider.model, provider.dimensions, entry.inputChecksum],
       );
     }
 
-    for (const record of changedRecords) {
+    for (const record of rebuildRecords) {
       for (const fact of extractFacts(record)) {
         await client.query(
           `INSERT INTO facts (
@@ -399,7 +502,10 @@ export async function importFixtures(root: string) {
     recordCount: fixtures.records.length,
     changedRecordCount: changedRecords.length,
     unchangedRecordCount: fixtures.records.length - changedRecords.length,
-    chunkCount: chunkEntries.length,
+    reindexedRecordCount: rebuildRecords.length - changedRecords.length,
+    chunkCount: allChunkEntries.length,
     embeddedChunkCount: chunkEntries.length,
+    embeddingModel: provider.model,
+    embeddingDimensions: provider.dimensions,
   };
 }

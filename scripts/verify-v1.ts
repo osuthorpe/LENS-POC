@@ -2,6 +2,10 @@ import { buildBrief, validateCitations } from '../lib/brief';
 import { getCompanies } from '../lib/companies';
 import { pool } from '../lib/db';
 import {
+  EMBEDDING_DIMENSIONS,
+  EMBEDDING_MODEL,
+} from '../lib/embeddings';
+import {
   assertCompanyIsolation,
   retrieveEvidence,
 } from '../lib/retrieval';
@@ -20,9 +24,13 @@ try {
     (SELECT COUNT(*) FROM companies)::text AS company_count,
     (SELECT COUNT(*) FROM source_records)::text AS record_count,
     (SELECT COUNT(*) FROM document_chunks)::text AS chunk_count,
-    (SELECT COUNT(*) FROM document_chunks WHERE embedding IS NOT NULL)::text AS vector_count,
+    (SELECT COUNT(*) FROM document_chunks
+      WHERE embedding IS NOT NULL
+        AND embedding_model = $1
+        AND embedding_dimensions = $2)::text AS vector_count,
     to_regclass('public.brief_feedback')::text AS feedback_table,
-    (SELECT COUNT(*) FROM pg_constraint WHERE conname = 'brief_feedback_run_company_fk')::text AS feedback_company_guard`);
+    (SELECT COUNT(*) FROM pg_constraint WHERE conname = 'brief_feedback_run_company_fk')::text AS feedback_company_guard`,
+  [EMBEDDING_MODEL, EMBEDDING_DIMENSIONS]);
   const counts = database.rows[0];
   checks.push({
     name: 'Demo data size',
@@ -32,7 +40,7 @@ try {
   checks.push({
     name: 'Vector coverage',
     passed: counts?.chunk_count === counts?.vector_count,
-    detail: `${counts?.vector_count} of ${counts?.chunk_count} chunks have vectors`,
+    detail: `${counts?.vector_count} of ${counts?.chunk_count} chunks use ${EMBEDDING_MODEL}`,
   });
   checks.push({
     name: 'Feedback review queue',
@@ -42,6 +50,7 @@ try {
 
   const companies = await getCompanies();
   const briefs = new Map();
+  const evidenceByCompany = new Map();
   for (const company of companies) {
     const started = performance.now();
     const evidence = await retrieveEvidence(company.id);
@@ -50,6 +59,7 @@ try {
     validateCitations(brief);
     const duration = Math.round(performance.now() - started);
     briefs.set(company.id, brief);
+    evidenceByCompany.set(company.id, evidence);
     checks.push({
       name: `${company.name} brief`,
       passed: duration < 30000 && evidence.length > 0,
@@ -58,6 +68,13 @@ try {
   }
 
   const vectorForge = briefs.get('cmp_vectorforge');
+  checks.push({
+    name: 'Portfolio must-find source',
+    passed: evidenceByCompany.get('cmp_vectorforge')?.some(
+      (entry: { id: string }) => entry.id === 'meeting-001',
+    ) === true,
+    detail: 'VectorForge retrieval includes the finance review.',
+  });
   checks.push({
     name: 'VectorForge conflict',
     passed: vectorForge.currentState.some((entry: { state: string }) => entry.state === 'conflict'),
@@ -75,6 +92,13 @@ try {
     detail: 'The brief uses the current value and keeps the earlier value in Evidence.',
   });
   const kestrel = briefs.get('cmp_kestrelhealth');
+  checks.push({
+    name: 'Pipeline must-find source',
+    passed: evidenceByCompany.get('cmp_kestrelhealth')?.some(
+      (entry: { id: string }) => entry.id === 'slack-006',
+    ) === true,
+    detail: 'Kestrel retrieval includes the unverified FDA claim.',
+  });
   checks.push({
     name: 'Kestrel unverified claim',
     passed: kestrel.risks.some((entry: { state: string }) => entry.state === 'unverified'),

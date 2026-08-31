@@ -6,6 +6,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { error: 'The import endpoint is not available.' },
+      { status: 404 },
+    );
+  }
   try {
     const result = await importFixtures(resolve(process.cwd(), 'demo_data'));
     return NextResponse.json({ status: 'complete', ...result });

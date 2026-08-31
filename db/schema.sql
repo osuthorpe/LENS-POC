@@ -49,11 +49,35 @@ CREATE TABLE IF NOT EXISTS document_chunks (
   content TEXT NOT NULL,
   token_count INTEGER NOT NULL,
   embedding VECTOR(1536),
+  embedding_model TEXT,
+  embedding_dimensions SMALLINT,
+  embedding_input_checksum TEXT,
+  embedded_at TIMESTAMPTZ,
   search_document TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (source_record_id, position)
 );
+
+ALTER TABLE document_chunks
+  ADD COLUMN IF NOT EXISTS embedding_model TEXT,
+  ADD COLUMN IF NOT EXISTS embedding_dimensions SMALLINT,
+  ADD COLUMN IF NOT EXISTS embedding_input_checksum TEXT,
+  ADD COLUMN IF NOT EXISTS embedded_at TIMESTAMPTZ;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'document_chunks_embedding_dimensions_check'
+      AND conrelid = 'document_chunks'::regclass
+  ) THEN
+    ALTER TABLE document_chunks
+      ADD CONSTRAINT document_chunks_embedding_dimensions_check
+      CHECK (embedding_dimensions IS NULL OR embedding_dimensions = 1536);
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS facts (
   id BIGSERIAL PRIMARY KEY,
@@ -158,4 +182,4 @@ CREATE INDEX IF NOT EXISTS chunks_search_idx ON document_chunks USING GIN (searc
 CREATE INDEX IF NOT EXISTS facts_company_key_idx ON facts (company_id, fact_key, fact_date DESC);
 
 COMMENT ON COLUMN document_chunks.embedding IS
-  'An OpenAI text-embedding-3-small vector. V1 uses exact vector search.';
+  'A 1536-value OpenAI text-embedding-3-large vector. V1 uses exact vector search.';
