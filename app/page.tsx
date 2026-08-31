@@ -40,6 +40,7 @@ import {
   relevantSourceExcerpt,
   sourceSupportsValue,
 } from '@/lib/evidence-detail';
+import { selectKeyFacts } from '@/lib/brief-view';
 import { fallbackBrief, fallbackCompanies } from '@/lib/fallback-data';
 import type {
   BriefItem,
@@ -681,6 +682,10 @@ export default function Home() {
         : 0,
     [brief, briefMatchesSelection],
   );
+  const keyFacts = useMemo(
+    () => selectKeyFacts(brief.changes, brief.currentState),
+    [brief],
+  );
 
   useEffect(() => {
     let active = true;
@@ -914,21 +919,11 @@ export default function Home() {
                   <>
                     <EvidenceSection
                       expandedItemId={expandedItemId}
-                      items={brief.changes}
+                      items={keyFacts}
                       onOpenSource={openFullSource}
                       onToggleItem={toggleEvidence}
                       sources={brief.sources}
-                      title={selected.lastReviewDate
-                        ? `Changes after ${formatDate(selected.lastReviewDate)}`
-                        : 'Changes since last review (date not recorded)'}
-                    />
-                    <EvidenceSection
-                      expandedItemId={expandedItemId}
-                      items={brief.currentState}
-                      onOpenSource={openFullSource}
-                      onToggleItem={toggleEvidence}
-                      sources={brief.sources}
-                      title="Key facts now"
+                      title="Key facts"
                     />
                     <EvidenceSection
                       expandedItemId={expandedItemId}

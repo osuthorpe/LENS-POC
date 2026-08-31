@@ -44,12 +44,10 @@ RC selects a known company. RC requests the newest brief. The product returns th
 The brief contains these sections:
 
 1. **Company snapshot:** The company description, stage, sector, status, and investment relationship.
-2. **Current state:** The available financial, operating, customer, product, team, and funding information.
-3. **Changes:** Important changes since the last review or discussion.
-4. **Risks:** Negative signals, dependencies, conflicts, and open concerns.
-5. **Open questions:** Information that is missing, old, or unclear.
-6. **Suggested questions:** Questions that RC can ask in the next discussion.
-7. **Sources and coverage:** Source dates, source references, and known gaps.
+2. **Key facts:** The current facts and important changes since the last review or discussion.
+3. **Risks:** Negative signals, dependencies, conflicts, and open concerns.
+4. **Questions:** Information that is missing, old, or unclear, and questions for the next discussion.
+5. **Sources and coverage:** Source dates, source references, and known gaps.
 
 The first view shows the statement, evidence state, source count, and newest source date. Each warning tells RC what action he can take. RC can open a statement to see its key values and supporting records. RC can open a supporting record to see the imported source content, record dates, source location, and original fields.
 
@@ -60,7 +58,7 @@ The product must identify generated analysis. The product must separate this ana
 | User story | Acceptance criterion |
 | --- | --- |
 | RC selects a company and requests a brief. | The product returns a useful brief in 30 seconds or less. |
-| RC wants to know what changed. | The brief shows dated changes since the last important review. |
+| RC wants to know what changed. | Key facts include the important dated changes since the last review. |
 | RC wants to check an important fact. | The fact shows its source and date. RC can open the source context. |
 | RC wants to know the quality of the information. | The brief shows old, missing, unsupported, and conflicting information. |
 | RC wants to prepare for a discussion. | The brief gives questions that come from evidence or known gaps. |
