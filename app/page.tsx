@@ -391,52 +391,70 @@ function EvidenceItem({
   const evidenceLabel = itemSources.length === 1
     ? `Evidence · ${sourceLabel(itemSources[0].sourceType)} · ${latestLabel}`
     : `Evidence · ${itemSources.length} sources · latest ${latestLabel}`;
+  const evidenceName = itemSources.length === 1
+    ? sourceLabel(itemSources[0].sourceType)
+    : `${itemSources.length} sources`;
+  const showLabels = item.kind === 'analysis' || item.state !== 'confirmed';
   const panelId = `evidence-${item.id}`;
   return (
-    <div className="border-b border-stone-100 py-3.5 first:pt-0 last:border-0 last:pb-0">
-      <div className="flex items-start gap-2.5">
-        {StateIcon && <StateIcon className={`mt-1 h-4 w-4 shrink-0 ${stateIconStyle[item.state]}`} />}
-        <div className="min-w-0 flex-1">
-          <div className="mb-1.5 flex flex-wrap gap-1.5">
-            {item.kind === 'analysis' && (
-              <Badge className="h-5 rounded-md border-blue-200 bg-blue-50 px-1.5 text-[10px] font-semibold text-blue-800" variant="outline">
-                Analysis
-              </Badge>
-            )}
-            {item.state !== 'confirmed' && (
-              <Badge
-                className={`h-5 rounded-md px-1.5 text-[10px] font-semibold ${stateStyle[item.state]}`}
-                variant="outline"
-              >
-                {stateLabel(item.state)}
-              </Badge>
-            )}
-          </div>
-          <p className="text-[13px] leading-[1.55rem] text-slate-700">{item.text}</p>
-          <button
-            aria-controls={panelId}
-            aria-expanded={expanded}
-            className={`mt-2.5 inline-flex min-h-10 items-center gap-2 rounded-lg border px-2.5 text-[11px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
-              expanded
-                ? 'border-blue-200 bg-blue-50 text-blue-800'
-                : 'border-stone-200 bg-stone-50/70 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
-            }`}
-            id={`${panelId}-trigger`}
-            onClick={onToggle}
-            type="button"
-          >
-            <FileSearch className="h-3.5 w-3.5" />
-            {evidenceLabel}
-            <ChevronDown className={`h-3.5 w-3.5 transition ${expanded ? 'rotate-180' : ''}`} />
-          </button>
+    <div className="border-b border-stone-100 py-3 first:pt-0 last:border-0 last:pb-0">
+      <div className="grid grid-cols-[minmax(0,1fr)_112px] items-start gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_148px]">
+        <div className="min-w-0 self-center">
+          {showLabels && (
+            <div className="mb-1 flex flex-wrap items-center gap-1.5">
+              {StateIcon && <StateIcon className={`h-4 w-4 shrink-0 ${stateIconStyle[item.state]}`} />}
+              {item.kind === 'analysis' && (
+                <Badge className="h-5 rounded-md border-blue-200 bg-blue-50 px-1.5 text-[10px] font-semibold text-blue-800" variant="outline">
+                  Analysis
+                </Badge>
+              )}
+              {item.state !== 'confirmed' && (
+                <Badge
+                  className={`h-5 rounded-md px-1.5 text-[10px] font-semibold ${stateStyle[item.state]}`}
+                  variant="outline"
+                >
+                  {stateLabel(item.state)}
+                </Badge>
+              )}
+            </div>
+          )}
+          <p className="text-[13px] leading-5 text-slate-700">{item.text}</p>
+        </div>
 
-          {expanded && (
-            <section
-              aria-labelledby={`${panelId}-trigger`}
-              className="mt-3 rounded-xl border border-blue-100 bg-[#f7faff] p-3 sm:p-4"
-              id={panelId}
-              role="region"
-            >
+        <button
+          aria-controls={panelId}
+          aria-expanded={expanded}
+          aria-label={evidenceLabel}
+          className={`flex min-h-11 w-full items-center justify-between gap-1.5 rounded-lg border px-2 py-1.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:gap-2 sm:px-2.5 ${
+            expanded
+              ? 'border-blue-200 bg-blue-50 text-blue-800'
+              : 'border-stone-200 bg-stone-50/70 text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+          }`}
+          id={`${panelId}-trigger`}
+          onClick={onToggle}
+          type="button"
+        >
+          <FileSearch className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[11px] font-semibold leading-4">{evidenceName}</span>
+            {item.sourceDate ? (
+              <time className="block truncate text-[11px] font-medium leading-4 opacity-75" dateTime={item.sourceDate}>
+                {latestLabel}
+              </time>
+            ) : (
+              <span className="block truncate text-[11px] font-medium leading-4 opacity-75">{latestLabel}</span>
+            )}
+          </span>
+          <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {expanded && (
+          <section
+            aria-labelledby={`${panelId}-trigger`}
+            className="col-span-2 mt-1 rounded-xl border border-blue-100 bg-[#f7faff] p-3 sm:p-4"
+            id={panelId}
+            role="region"
+          >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-slate-800">{evidenceHeading(item.kind)}</p>
                 <Badge className="bg-white text-[10px] text-slate-600" variant="outline">
@@ -535,9 +553,8 @@ function EvidenceItem({
                   );
                 })}
               </div>
-            </section>
-          )}
-        </div>
+          </section>
+        )}
       </div>
     </div>
   );
@@ -559,11 +576,11 @@ function EvidenceSection({
   onOpenSource: (source: SourceReference, item: BriefItem) => void;
 }) {
   return (
-    <Card className="border-stone-200/90 bg-white/95 shadow-[0_8px_28px_rgb(34_53_80/4%)]">
-      <CardHeader className="pb-2.5">
-        <CardTitle className="font-display text-[23px] font-normal tracking-tight text-slate-900">
+    <Card className="border-stone-200/90 bg-white/95 shadow-[0_8px_28px_rgb(34_53_80/4%)]" size="sm">
+      <CardHeader className="pb-1.5">
+        <h2 className="font-display text-xl font-normal tracking-tight text-slate-900">
           {title}
-        </CardTitle>
+        </h2>
       </CardHeader>
       <CardContent>
         {items.map((item) => (
@@ -889,8 +906,8 @@ export default function Home() {
               </Alert>
             )}
 
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_248px]">
-              <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_248px]">
+              <div className="space-y-3">
                 {!showBrief ? (
                   <BriefSkeleton />
                 ) : (
@@ -901,7 +918,9 @@ export default function Home() {
                       onOpenSource={openFullSource}
                       onToggleItem={toggleEvidence}
                       sources={brief.sources}
-                      title="What changed"
+                      title={selected.lastReviewDate
+                        ? `Changes after ${formatDate(selected.lastReviewDate)}`
+                        : 'Changes since last review (date not recorded)'}
                     />
                     <EvidenceSection
                       expandedItemId={expandedItemId}
@@ -909,7 +928,7 @@ export default function Home() {
                       onOpenSource={openFullSource}
                       onToggleItem={toggleEvidence}
                       sources={brief.sources}
-                      title="Current state"
+                      title="Key facts now"
                     />
                     <EvidenceSection
                       expandedItemId={expandedItemId}
@@ -919,24 +938,14 @@ export default function Home() {
                       sources={brief.sources}
                       title="Risks"
                     />
-                    <div className="grid gap-4 2xl:grid-cols-2">
-                      <EvidenceSection
-                        expandedItemId={expandedItemId}
-                        items={brief.openQuestions}
-                        onOpenSource={openFullSource}
-                        onToggleItem={toggleEvidence}
-                        sources={brief.sources}
-                        title="Open questions"
-                      />
-                      <EvidenceSection
-                        expandedItemId={expandedItemId}
-                        items={brief.suggestedQuestions}
-                        onOpenSource={openFullSource}
-                        onToggleItem={toggleEvidence}
-                        sources={brief.sources}
-                        title="Questions to ask"
-                      />
-                    </div>
+                    <EvidenceSection
+                      expandedItemId={expandedItemId}
+                      items={[...brief.openQuestions, ...brief.suggestedQuestions]}
+                      onOpenSource={openFullSource}
+                      onToggleItem={toggleEvidence}
+                      sources={brief.sources}
+                      title="Questions"
+                    />
                   </>
                 )}
               </div>
