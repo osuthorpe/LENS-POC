@@ -17,6 +17,7 @@
     "setup": "npm run db:up && npm run db:migrate && npm run data:import",
     "test": "vitest run",
     "verify:embeddings": "node --env-file-if-exists=.env.local --import tsx scripts/verify-embeddings.ts",
+    "verify:generation": "node --env-file-if-exists=.env.local --import tsx scripts/verify-generation.ts",
     "verify:v1": "node --env-file-if-exists=.env.local --import tsx scripts/verify-v1.ts"
   },
   "dependencies": {

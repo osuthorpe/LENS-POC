@@ -4,6 +4,11 @@ import {
   EMBEDDING_DIMENSIONS,
   EMBEDDING_MODEL,
 } from '@/lib/embeddings';
+import {
+  BRIEF_GENERATION_MODEL,
+  BRIEF_GENERATION_PROMPT_VERSION,
+  BRIEF_GENERATION_REASONING_EFFORT,
+} from '@/lib/brief-generation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,6 +45,9 @@ export async function GET() {
       apiConfigured,
       embeddingModel: EMBEDDING_MODEL,
       embeddingDimensions: EMBEDDING_DIMENSIONS,
+      generationModel: BRIEF_GENERATION_MODEL,
+      generationReasoningEffort: BRIEF_GENERATION_REASONING_EFFORT,
+      generationPromptVersion: BRIEF_GENERATION_PROMPT_VERSION,
     }, { status: ready ? 200 : 503 });
   } catch {
     return NextResponse.json(

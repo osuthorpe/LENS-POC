@@ -803,6 +803,10 @@ export default function Home() {
 
   const showBrief = !loading && briefMatchesSelection;
   const dataWarning = status !== 'ready';
+  const generationWarning =
+    briefMatchesSelection &&
+    status === 'ready' &&
+    brief.mode === 'evidence-fallback';
   const sourceValues = sourceParentItem?.values ??
     (sourceParentItem ? extractClaimValues(sourceParentItem.text) : []);
   const sourceContent = sourceDetail?.normalizedContent ?? openSource?.content ?? '';
@@ -955,12 +959,14 @@ export default function Home() {
               </div>
             </section>
 
-            {(conflictCount > 0 || dataWarning) && !loading && (
+            {(conflictCount > 0 || dataWarning || generationWarning) && !loading && (
               <Alert className="mb-5 border-amber-200 bg-amber-50/90 py-3 text-amber-950">
                 <TriangleAlert className="text-amber-600" />
                 <AlertTitle>
                   {dataWarning
                     ? 'Live data is unavailable'
+                    : generationWarning
+                      ? 'Local rules prepared this brief'
                     : conflictCount === 1
                       ? '1 statement has values that differ'
                       : `${conflictCount} statements have values that differ`}
@@ -970,6 +976,8 @@ export default function Home() {
                     ? showBrief
                       ? 'The last verified brief remains visible.'
                       : 'Select Refresh brief to try again.'
+                    : generationWarning
+                      ? 'Select Refresh brief to try live generation again.'
                     : 'Open Evidence and compare the dated values before you use the statement.'}
                 </AlertDescription>
               </Alert>

@@ -11,6 +11,7 @@ node_modules/
 dist/
 build/
 .open-next/
+*.tsbuildinfo
 
 # Test output
 coverage/

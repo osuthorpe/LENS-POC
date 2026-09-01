@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { buildBrief, recordBriefRun, validateCitations } from '@/lib/brief';
+import { recordBriefRun, validateCitations } from '@/lib/brief';
+import {
+  BRIEF_REQUEST_BUDGET_MS,
+  generateGroundedBrief,
+} from '@/lib/brief-generation';
 import { getCompany } from '@/lib/companies';
 import {
   assertCompanyIsolation,
@@ -31,7 +35,16 @@ export async function POST(request: Request) {
         { status: 422 },
       );
     }
-    const brief = buildBrief(company, evidence);
+    const remainingTime = Math.max(
+      0,
+      BRIEF_REQUEST_BUDGET_MS - (performance.now() - start),
+    );
+    const brief = await generateGroundedBrief(
+      company,
+      evidence,
+      undefined,
+      remainingTime,
+    );
     brief.durationMs = Math.round(performance.now() - start);
     validateCitations(brief);
     const briefRunId = await recordBriefRun(brief, evidence);
@@ -46,7 +59,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: 'The brief could not be prepared.',
-        detail: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 },
     );

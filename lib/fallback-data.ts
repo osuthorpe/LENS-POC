@@ -69,6 +69,15 @@ export const fallbackBrief: BriefResult = {
   generatedAt: '2026-08-31T14:02:00Z',
   durationMs: 1840,
   mode: 'evidence-fallback',
+  generationModel: null,
+  generationReasoningEffort: null,
+  generationPromptVersion: null,
+  generationResponseId: null,
+  generationInputTokens: null,
+  generationOutputTokens: null,
+  generationDurationMs: null,
+  generationRequiredSignalsAdded: 0,
+  generationFallbackReason: 'demo_data',
   inputQuery: 'Current company state, changes, risks, and open questions',
   currentState: [
     {

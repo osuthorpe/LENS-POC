@@ -95,10 +95,30 @@ CREATE TABLE IF NOT EXISTS brief_runs (
   company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   retrieval_input TEXT NOT NULL,
   generation_mode TEXT NOT NULL,
+  generation_model TEXT,
+  generation_reasoning_effort TEXT,
+  generation_prompt_version TEXT,
+  generation_response_id TEXT,
+  generation_input_tokens INTEGER,
+  generation_output_tokens INTEGER,
+  generation_duration_ms INTEGER,
+  generation_required_signals_added INTEGER NOT NULL DEFAULT 0,
+  generation_fallback_reason TEXT,
   generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   duration_ms INTEGER NOT NULL,
   result JSONB NOT NULL
 );
+
+ALTER TABLE brief_runs
+  ADD COLUMN IF NOT EXISTS generation_model TEXT,
+  ADD COLUMN IF NOT EXISTS generation_reasoning_effort TEXT,
+  ADD COLUMN IF NOT EXISTS generation_prompt_version TEXT,
+  ADD COLUMN IF NOT EXISTS generation_response_id TEXT,
+  ADD COLUMN IF NOT EXISTS generation_input_tokens INTEGER,
+  ADD COLUMN IF NOT EXISTS generation_output_tokens INTEGER,
+  ADD COLUMN IF NOT EXISTS generation_duration_ms INTEGER,
+  ADD COLUMN IF NOT EXISTS generation_required_signals_added INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS generation_fallback_reason TEXT;
 
 CREATE TABLE IF NOT EXISTS brief_evidence (
   brief_run_id UUID NOT NULL REFERENCES brief_runs(id) ON DELETE CASCADE,

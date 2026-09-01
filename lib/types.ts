@@ -100,7 +100,35 @@ export interface BriefResult {
   company: Company;
   generatedAt: string;
   durationMs: number;
-  mode: 'evidence-engine' | 'evidence-fallback';
+  mode: 'openai-grounded' | 'evidence-fallback';
+  generationModel: string | null;
+  generationReasoningEffort: 'low' | 'medium' | null;
+  generationPromptVersion: string | null;
+  generationResponseId: string | null;
+  generationInputTokens: number | null;
+  generationOutputTokens: number | null;
+  generationDurationMs: number | null;
+  generationRequiredSignalsAdded: number;
+  generationFallbackReason:
+    | 'local_rule_engine'
+    | 'demo_data'
+    | 'not_configured'
+    | 'time_budget_exhausted'
+    | 'timeout'
+    | 'api_error'
+    | 'refusal'
+    | 'incomplete'
+    | 'invalid_schema'
+    | 'invalid_quote'
+    | 'unknown_source'
+    | 'unsupported_claim'
+    | 'unsupported_value'
+    | 'invalid_conflict'
+    | 'duplicate_source'
+    | 'duplicate_item'
+    | 'required_signal_missing'
+    | 'investment_recommendation'
+    | null;
   inputQuery: string;
   currentState: BriefItem[];
   changes: BriefItem[];
