@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { withTransaction } from '@/lib/db';
+import { pool, withTransaction } from '@/lib/db';
 import {
   citationRoleForSource,
   extractClaimValues,
@@ -401,4 +401,22 @@ export async function recordBriefRun(
     }
   });
   return id;
+}
+
+export async function getLatestBriefRun(
+  companyId: string,
+): Promise<BriefResult | null> {
+  const result = await pool.query<{
+    id: string;
+    result: BriefResult;
+  }>(
+    `SELECT id, result
+     FROM brief_runs
+     WHERE company_id = $1
+     ORDER BY generated_at DESC, id DESC
+     LIMIT 1`,
+    [companyId],
+  );
+  const row = result.rows[0];
+  return row ? { ...row.result, briefRunId: row.id } : null;
 }

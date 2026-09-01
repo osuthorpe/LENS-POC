@@ -108,38 +108,42 @@ The checksum makes the import idempotent. An import does not change a record whe
 
 ## Brief Flow
 
-1. RC selects a known company.
-2. The retrieval service sends the fixed query text to the OpenAI Embeddings API.
-3. The API returns a query embedding.
-4. The database applies a hard company filter.
-5. The retrieval service searches full text and stored embeddings.
-6. The retrieval service ranks evidence by search match, source quality, and date.
-7. The brief service sends selected company data and retrieved evidence to `gpt-5.6-sol` through the Responses API.
-8. The request uses low reasoning effort and a strict JSON schema.
-9. The request uses no tools and sets `store: false`.
-10. The model call has a 27-second timeout and no automatic retry. The full brief request has a 29-second budget.
-11. The model returns the five required brief sections and an exact quote for each cited source.
-12. The server confirms that each source ID is in the retrieved evidence set.
-13. The server confirms that each quote occurs in its source.
-14. The server checks factual statements against the content words in their quotes.
-15. The server checks money, percentages, durations, dates, and counts against cited sources.
-16. A value conflict must use two direct sources for the different values.
-17. The server rejects investment recommendations.
-18. The server makes sure that each source marked `unverified` appears as an unverified risk.
-19. The server creates item IDs, dates, excerpts, values, and citation roles.
-20. The citation check confirms each source ID.
-21. The isolation check confirms each evidence record has the selected company ID.
-22. A model error or invalid result starts the deterministic local fallback.
-23. The application records the generation mode, model data, evidence set, result, and time.
-24. The interface shows a compact brief.
-25. RC opens one statement to see its values, evidence role, and source excerpts.
-26. The source API checks the selected company ID before it returns source detail.
-27. RC opens one source to see the stored source content, dates, location, structured facts, and original record.
-28. The Brief API returns the identifier for the saved brief.
-29. RC can mark the full brief or one statement as `Good`, `Bad`, or `Wrong`.
-30. The Feedback API checks the company and saved brief.
-31. The Feedback API copies the saved statement text and source IDs into the review item.
-32. The server sets the priority and opens the review item.
+1. RC opens the application or selects a known company.
+2. The Brief API loads that company's latest saved brief.
+3. The interface shows the saved brief without running retrieval or generation again.
+4. If no saved brief exists, the application prepares and saves the first one.
+5. RC selects `Refresh brief` to explicitly request a new brief.
+6. The retrieval service sends the fixed query text to the OpenAI Embeddings API.
+7. The API returns a query embedding.
+8. The database applies a hard company filter.
+9. The retrieval service searches full text and stored embeddings.
+10. The retrieval service ranks evidence by search match, source quality, and date.
+11. The brief service sends selected company data and retrieved evidence to `gpt-5.6-sol` through the Responses API.
+12. The request uses low reasoning effort and a strict JSON schema.
+13. The request uses no tools and sets `store: false`.
+14. The model call has a 27-second timeout and no automatic retry. The full brief request has a 29-second budget.
+15. The model returns the five required brief sections and an exact quote for each cited source.
+16. The server confirms that each source ID is in the retrieved evidence set.
+17. The server confirms that each quote occurs in its source.
+18. The server checks factual statements against the content words in their quotes.
+19. The server checks money, percentages, durations, dates, and counts against cited sources.
+20. A value conflict must use two direct sources for the different values.
+21. The server rejects investment recommendations.
+22. The server makes sure that each source marked `unverified` appears as an unverified risk.
+23. The server creates item IDs, dates, excerpts, values, and citation roles.
+24. The citation check confirms each source ID.
+25. The isolation check confirms each evidence record has the selected company ID.
+26. A model error or invalid result starts the deterministic local fallback.
+27. The application records the generation mode, model data, evidence set, result, and time.
+28. The interface shows the new compact brief.
+29. RC opens one statement to see its values, evidence role, and source excerpts.
+30. The source API checks the selected company ID before it returns source detail.
+31. RC opens one source to see the stored source content, dates, location, structured facts, and original record.
+32. The Brief API returns the identifier for the saved brief.
+33. RC can mark the full brief or one statement as `Good`, `Bad`, or `Wrong`.
+34. The Feedback API checks the company and saved brief.
+35. The Feedback API copies the saved statement text and source IDs into the review item.
+36. The server sets the priority and opens the review item.
 
 When a newer verified value exists, the main fact is confirmed. The older source remains in Evidence with the `Earlier value` role. The state engine uses `Update needed` only when every available source is marked as old. A current source removes this warning.
 

@@ -131,6 +131,9 @@ CREATE TABLE IF NOT EXISTS brief_evidence (
 CREATE UNIQUE INDEX IF NOT EXISTS brief_runs_id_company_unique_idx
   ON brief_runs (id, company_id);
 
+CREATE INDEX IF NOT EXISTS brief_runs_company_generated_idx
+  ON brief_runs (company_id, generated_at DESC);
+
 CREATE TABLE IF NOT EXISTS brief_feedback (
   id UUID PRIMARY KEY,
   brief_run_id UUID NOT NULL,

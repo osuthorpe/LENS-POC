@@ -1,6 +1,6 @@
-# AIVC Company Intelligence
+# LENS
 
-AIVC Company Intelligence prepares a current company brief from approved source records. It shows the source and date for each important fact. It also shows old, missing, conflicting, and unverified information.
+LENS prepares a current company brief from approved source records. It shows the source and date for each important fact. It also shows old, missing, conflicting, and unverified information.
 
 V1 uses fictional demo records. It does not connect to production source systems.
 
@@ -110,7 +110,7 @@ A model error, timeout, refusal, incomplete result, invalid schema, invalid quot
 
 The service shows `Update needed` only when every available source for a fact is marked as old. A current source removes this warning.
 
-The interface can send feedback for one statement or the full brief. The server checks the saved brief and company. It copies the saved statement and source IDs into the review item. The browser cannot set the priority or status.
+The interface loads the latest saved brief when it opens and when the user selects a company. If a company has no saved brief yet, it prepares the first one. The Refresh brief button explicitly prepares and saves a new brief. The interface can send feedback for one statement or the full brief. The server checks the saved brief and company. It copies the saved statement and source IDs into the review item. The browser cannot set the priority or status.
 
 V1 sends fictional chunk text, query text, selected company data, and retrieved evidence text to OpenAI. The Embeddings API creates search embeddings. The Responses API creates the source-supported brief. V1 does not send raw JSON records, access data, or records for another company.
 

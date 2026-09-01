@@ -3,7 +3,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AIVC Company Intelligence',
+  title: 'LENS',
   description: 'Prepare a current company brief from approved evidence.',
 };
 

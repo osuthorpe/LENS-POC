@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Building2,
   CalendarDays,
@@ -192,7 +193,16 @@ function HighlightedText({ text, values }: { text: string; values: ClaimValue[] 
   );
 }
 
-async function fetchBrief(companyId: string) {
+async function fetchSavedBrief(companyId: string) {
+  const response = await fetch(
+    `/api/briefs?companyId=${encodeURIComponent(companyId)}`,
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error('Saved brief loading failed.');
+  return response.json() as Promise<BriefResult>;
+}
+
+async function prepareBrief(companyId: string) {
   const response = await fetch('/api/briefs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -239,10 +249,10 @@ function CompanyList({
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-stone-200/80 bg-[#f6f3ed]/95 lg:flex">
       <div className="flex h-[60px] shrink-0 items-center gap-3 border-b border-stone-200/80 px-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#18345c] text-xs font-bold tracking-tight text-white shadow-sm">
-          AI
+          L
         </div>
         <div>
-          <p className="text-sm font-semibold tracking-tight text-slate-900">AIVC</p>
+          <p className="text-sm font-semibold tracking-tight text-slate-900">LENS</p>
           <p className="text-[11px] text-slate-500">Company intelligence</p>
         </div>
       </div>
@@ -644,31 +654,71 @@ function BriefSkeleton() {
   );
 }
 
-function CoveragePanel({ brief }: { brief: BriefResult }) {
+function CoveragePanel({
+  brief,
+  expanded,
+  onExpandedChange,
+}: {
+  brief: BriefResult;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
+}) {
   const total = brief.coverage.reduce((sum, item) => sum + item.count, 0);
+
+  if (!expanded) {
+    return (
+      <aside className="justify-self-end xl:sticky xl:top-20 xl:self-start">
+        <button
+          aria-label={`Show sources: ${total} imported records`}
+          className="relative flex h-12 w-12 items-center justify-center rounded-xl border border-stone-200/90 bg-white/95 text-blue-700 shadow-[0_8px_28px_rgb(34_53_80/4%)] outline-none transition hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+          onClick={() => onExpandedChange(true)}
+          title={`${total} imported records · show sources`}
+          type="button"
+        >
+          <ShieldCheck className="h-5 w-5" />
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#fbfaf7] bg-[#315f9f] px-1 text-[9px] font-bold tabular-nums text-white">
+            {total}
+          </span>
+          <ChevronLeft className="absolute bottom-0.5 right-0.5 h-3 w-3 text-slate-400" />
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="xl:sticky xl:top-20 xl:self-start">
       <Card className="border-stone-200/90 bg-white/95 shadow-[0_8px_28px_rgb(34_53_80/4%)]">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                <ShieldCheck className="h-4 w-4" />
-              </span>
-              <CardTitle className="text-sm">Sources</CardTitle>
+          <button
+            aria-controls="source-coverage-breakdown"
+            aria-expanded="true"
+            className="w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+            onClick={() => onExpandedChange(false)}
+            type="button"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                  <ShieldCheck className="h-4 w-4" />
+                </span>
+                <CardTitle className="text-sm">Sources</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge
+                  className="border-blue-200 bg-blue-50 text-[10px] text-blue-800"
+                  variant="outline"
+                >
+                  Selected company
+                </Badge>
+                <ChevronRight className="h-4 w-4 text-slate-400" />
+              </div>
             </div>
-            <Badge
-              className="border-blue-200 bg-blue-50 text-[10px] text-blue-800"
-              variant="outline"
-            >
-              Selected company
-            </Badge>
-          </div>
-          <p className="text-xs leading-5 text-slate-500">
-            {total} imported records · newest {formatDate(brief.company.latestSourceDate)}
-          </p>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              {total} imported records · newest {formatDate(brief.company.latestSourceDate)}
+            </p>
+          </button>
         </CardHeader>
-        <CardContent>
+        <CardContent id="source-coverage-breakdown">
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-1">
             {brief.coverage.map((item) => (
               <div
@@ -697,6 +747,7 @@ export default function Home() {
   const [sourceLoading, setSourceLoading] = useState(false);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget | null>(null);
+  const [coverageExpanded, setCoverageExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<'ready' | 'offline' | 'error'>('offline');
   const requestId = useRef(0);
@@ -732,7 +783,8 @@ export default function Home() {
         if (!first) return;
         setCompanies(data.companies);
         setSelected(first);
-        const nextBrief = await fetchBrief(first.id);
+        const nextBrief =
+          (await fetchSavedBrief(first.id)) ?? (await prepareBrief(first.id));
         if (!active || currentRequest !== requestId.current) return;
         setBrief(nextBrief);
         setStatus('ready');
@@ -779,7 +831,7 @@ export default function Home() {
     return () => controller.abort();
   }, [openSource, selected.id]);
 
-  async function generateBrief(company = selected) {
+  async function loadBrief(company = selected) {
     const currentRequest = requestId.current + 1;
     requestId.current = currentRequest;
     setExpandedItemId(null);
@@ -788,7 +840,8 @@ export default function Home() {
     setSelected(company);
     setLoading(true);
     try {
-      const nextBrief = await fetchBrief(company.id);
+      const nextBrief =
+        (await fetchSavedBrief(company.id)) ?? (await prepareBrief(company.id));
       if (currentRequest !== requestId.current) return;
       setBrief(nextBrief);
       setStatus('ready');
@@ -796,6 +849,27 @@ export default function Home() {
       if (currentRequest !== requestId.current) return;
       setStatus('error');
       if (company.id === 'cmp_vectorforge') setBrief(fallbackBrief);
+    } finally {
+      if (currentRequest === requestId.current) setLoading(false);
+    }
+  }
+
+  async function refreshBrief() {
+    const currentRequest = requestId.current + 1;
+    requestId.current = currentRequest;
+    setExpandedItemId(null);
+    closeSource();
+    setFeedbackTarget(null);
+    setLoading(true);
+    try {
+      const nextBrief = await prepareBrief(selected.id);
+      if (currentRequest !== requestId.current) return;
+      setBrief(nextBrief);
+      setStatus('ready');
+    } catch {
+      if (currentRequest !== requestId.current) return;
+      setStatus('error');
+      if (selected.id === 'cmp_vectorforge') setBrief(fallbackBrief);
     } finally {
       if (currentRequest === requestId.current) setLoading(false);
     }
@@ -859,7 +933,7 @@ export default function Home() {
         activeId={selected.id}
         companies={companies}
         loadingId={loading ? selected.id : null}
-        onSelect={generateBrief}
+        onSelect={loadBrief}
       />
 
       <div className="lg:pl-[248px]">
@@ -882,7 +956,7 @@ export default function Home() {
               disabled={loading}
               onChange={(event) => {
                 const company = companies.find((item) => item.id === event.target.value);
-                if (company) generateBrief(company);
+                if (company) loadBrief(company);
               }}
               value={selected.id}
             >
@@ -914,7 +988,7 @@ export default function Home() {
             <Button
               className="h-10 bg-[#315f9f] px-3 shadow-sm hover:bg-[#244e87]"
               disabled={loading}
-              onClick={() => generateBrief()}
+              onClick={refreshBrief}
               size="sm"
             >
               {loading ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}
@@ -951,7 +1025,7 @@ export default function Home() {
                   <Building2 className="h-3.5 w-3.5" />{selected.sector}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5" />Last review {formatDate(selected.lastReviewDate)}
+                  <CalendarDays className="h-3.5 w-3.5" />Most recent record {formatDate(selected.latestSourceDate)}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5" />Owner {selected.owner}
@@ -983,7 +1057,13 @@ export default function Home() {
               </Alert>
             )}
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_248px]">
+            <div
+              className={`grid gap-4 ${
+                coverageExpanded
+                  ? 'xl:grid-cols-[minmax(0,1fr)_248px]'
+                  : 'xl:grid-cols-[minmax(0,1fr)_52px]'
+              }`}
+            >
               <div className="space-y-3">
                 {!showBrief ? (
                   <BriefSkeleton />
@@ -1025,7 +1105,17 @@ export default function Home() {
                   </>
                 )}
               </div>
-              {showBrief ? <CoveragePanel brief={brief} /> : <Skeleton className="h-44 rounded-xl" />}
+              {showBrief ? (
+                <CoveragePanel
+                  brief={brief}
+                  expanded={coverageExpanded}
+                  onExpandedChange={setCoverageExpanded}
+                />
+              ) : coverageExpanded ? (
+                <Skeleton className="h-44 rounded-xl" />
+              ) : (
+                <Skeleton className="h-12 w-12 justify-self-end rounded-xl" />
+              )}
             </div>
 
             <footer className="mt-7 border-t border-stone-200 py-4 text-[11px] text-slate-500">

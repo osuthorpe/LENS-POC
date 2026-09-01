@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/brief', () => ({
+  getLatestBriefRun: vi.fn(),
   recordBriefRun: vi.fn(),
   validateCitations: vi.fn(),
 }));
@@ -17,8 +18,12 @@ vi.mock('@/lib/retrieval', () => ({
   retrieveEvidence: vi.fn(),
 }));
 
-import { POST } from '@/app/api/briefs/route';
-import { recordBriefRun, validateCitations } from '@/lib/brief';
+import { GET, POST } from '@/app/api/briefs/route';
+import {
+  getLatestBriefRun,
+  recordBriefRun,
+  validateCitations,
+} from '@/lib/brief';
 import { generateGroundedBrief } from '@/lib/brief-generation';
 import { getCompany } from '@/lib/companies';
 import { fallbackBrief, fallbackCompanies } from '@/lib/fallback-data';
@@ -28,12 +33,39 @@ const runId = '00000000-0000-4000-8000-000000000001';
 
 describe('brief route', () => {
   beforeEach(() => {
+    vi.mocked(getLatestBriefRun).mockReset();
     vi.mocked(recordBriefRun).mockReset();
     vi.mocked(validateCitations).mockReset();
     vi.mocked(generateGroundedBrief).mockReset();
     vi.mocked(getCompany).mockReset();
     vi.mocked(retrieveEvidence).mockReset();
     vi.mocked(assertCompanyIsolation).mockReset();
+  });
+
+  it('returns the latest saved brief without generating a new one', async () => {
+    const savedBrief = { ...structuredClone(fallbackBrief), briefRunId: runId };
+    vi.mocked(getLatestBriefRun).mockResolvedValue(savedBrief);
+
+    const response = await GET(new Request(
+      'http://localhost/api/briefs?companyId=cmp_vectorforge',
+    ));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.briefRunId).toBe(runId);
+    expect(getLatestBriefRun).toHaveBeenCalledWith('cmp_vectorforge');
+    expect(generateGroundedBrief).not.toHaveBeenCalled();
+    expect(recordBriefRun).not.toHaveBeenCalled();
+  });
+
+  it('returns not found when a company has no saved brief', async () => {
+    vi.mocked(getLatestBriefRun).mockResolvedValue(null);
+
+    const response = await GET(new Request(
+      'http://localhost/api/briefs?companyId=cmp_vectorforge',
+    ));
+
+    expect(response.status).toBe(404);
   });
 
   it('saves a generated brief and returns its run ID', async () => {

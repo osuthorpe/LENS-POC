@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { recordBriefRun, validateCitations } from '@/lib/brief';
+import {
+  getLatestBriefRun,
+  recordBriefRun,
+  validateCitations,
+} from '@/lib/brief';
 import {
   BRIEF_REQUEST_BUDGET_MS,
   generateGroundedBrief,
@@ -18,6 +22,33 @@ export const dynamic = 'force-dynamic';
 const requestSchema = z.object({
   companyId: z.string().regex(/^cmp_[a-z0-9]+$/),
 });
+
+export async function GET(request: Request) {
+  try {
+    const { companyId } = requestSchema.parse({
+      companyId: new URL(request.url).searchParams.get('companyId'),
+    });
+    const brief = await getLatestBriefRun(companyId);
+    if (!brief) {
+      return NextResponse.json(
+        { error: 'The company does not have a saved brief.' },
+        { status: 404 },
+      );
+    }
+    return NextResponse.json(brief);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'The brief request is not valid.' },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json(
+      { error: 'The saved brief could not be loaded.' },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const start = performance.now();
