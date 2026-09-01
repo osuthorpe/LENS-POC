@@ -24,38 +24,73 @@ V1 uses fictional demo records. It does not connect to production source systems
 - A company-scoped feedback review queue
 - A Shadcn user interface
 
-## Start the Product
+## Start From a Clean Checkout
 
 You need these tools:
 
 - Node.js 22.13 or later
-- Docker Desktop
+- Docker Desktop with Docker Compose
 - npm
-- An OpenAI API key
+- An OpenAI API key with access to the configured embedding and generation models
 
-Copy the environment example before the first setup:
+The local product uses port `3000`. PostgreSQL uses port `5438`.
+
+### 1. Get the code
+
+```bash
+git clone https://github.com/osuthorpe/AVIC.git
+cd AVIC
+```
+
+### 2. Add the environment file
 
 ```bash
 cp .env.example .env.local
 ```
 
-Set `OPENAI_API_KEY` in `.env.local`. Data import and live brief generation require this key.
+Open `.env.local`. Set `OPENAI_API_KEY` to your key. Data import and live brief generation require this key.
 
 Keep the default `DATABASE_URL` for the local database. Change this value only if your database uses a different address.
 
 Do not commit `.env.local`. Git ignores this file.
 
+### 3. Install and prepare the product
+
 Run these commands from the repository root:
 
 ```bash
-npm install
+npm ci
 npm run setup
+```
+
+The setup command starts PostgreSQL. It creates the schema. It imports all 59 demo source records. It creates an embedding for each text chunk.
+
+### 4. Start the product
+
+```bash
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-The setup command starts PostgreSQL. It creates the schema. It then imports the demo data and creates embeddings.
+If port `3000` is in use, the development server shows a different port. Use the URL that the terminal shows. Use the same port for the health check.
+
+### 5. Check readiness
+
+Keep the product running. Run this command in a second terminal:
+
+```bash
+curl -i http://localhost:3000/api/health
+```
+
+A ready product returns HTTP `200`. The response has `"status":"ready"`, `"companyCount":10`, and `"recordCount":59`. The `chunkCount` and `embeddingCount` values must be equal.
+
+If the response returns HTTP `503`, check these items:
+
+- Docker Desktop is running.
+- `.env.local` contains `OPENAI_API_KEY`.
+- Port `5438` is available.
+- `npm run setup` completed without an error.
 
 ## Import the Demo Data Again
 
@@ -95,6 +130,52 @@ The V1 verification checks these items:
 - The feedback queue links each item to one saved brief and company.
 - Kestrel Health shows the unverified FDA claim.
 - Northstar Security shows the missing metrics.
+
+## Demo Test Data
+
+All committed demo data is fictional. Do not use it as investment information.
+
+The import reads these records:
+
+| Source fixture | Record count | Purpose |
+| --- | ---: | --- |
+| `demo_data/raw/crm/companies.json` | 10 | Company profiles, aliases, stages, sectors, and relationship data |
+| `demo_data/raw/crm/activities.json` | 14 | Revenue, runway, customer, risk, and diligence records |
+| `demo_data/raw/meetings/*.md` | 5 | Detailed meeting evidence for the focus companies |
+| `demo_data/raw/slack/messages.json` | 18 | Internal statements, confirmations, unresolved values, and missing items |
+| `demo_data/raw/news/articles.json` | 12 | Fictional public product and company records |
+| **Total** | **59** | All records that `npm run data:import` imports |
+
+### Complete company fixture summary
+
+The record columns show the count for CRM, meeting, Slack, and news records.
+
+| Company | Company ID | Relationship | Records | Primary test data |
+| --- | --- | --- | ---: | --- |
+| VectorForge AI | `cmp_vectorforge` | Portfolio | 4 / 1 / 4 / 2 = 11 | Finance ARR is 3.4 million USD. CRM ARR is 3.8 million USD. The values are not reconciled. Monthly burn is 420000 USD. Runway is approximately 14 months. Northbank expands from one workload to four workloads. Contract value increases by 180000 USD. The Series B process is planned for January 2027. |
+| LumenOps AI | `cmp_lumenops` | Portfolio | 4 / 1 / 3 / 2 = 10 | Runway decreases from 18 months in January to 9 months in August. Monthly recurring revenue is 142000 USD. Monthly burn is 310000 USD. The largest customer is 31 percent of monthly recurring revenue. The customer renews in November 2026. The company pauses three open roles. |
+| Kestrel Health AI | `cmp_kestrelhealth` | Pipeline | 2 / 1 / 2 / 1 = 6 | The company has four paid research customers. ARR is 620000 USD. A Slack message claims that the company has an FDA pilot. No document or direct company statement confirms the claim. The company expects two more paid trials before the end of 2026. Regulatory and security documents are missing. |
+| AtlasGrid AI | `cmp_atlasgrid` | Pipeline | 2 / 1 / 2 / 1 = 6 | `Atlas Grid` is an alias for `AtlasGrid AI`. ARR is 4.1 million USD. Gross retention is 92 percent. One automotive customer is 38 percent of revenue. Camera installation costs reduce first-year gross margin. |
+| Cedar Robotics | `cmp_cedarrobotics` | Pipeline | 2 / 0 / 1 / 1 = 4 | The company has two paid warehouse trials. Revenue, burn, runway, gross margin, deployment cost, and trial conversion data are missing. |
+| Prism Legal AI | `cmp_prismlegal` | Pipeline | 2 / 0 / 1 / 1 = 4 | ARR is 1.1 million USD. Net revenue retention is 118 percent. The SOC 2 Type I audit is complete. The Type II audit is expected in the first quarter of 2027. |
+| SageBio Systems | `cmp_sagebio` | Pipeline | 2 / 0 / 1 / 1 = 4 | The company has three design partners and no paid revenue. The founders plan to raise 2 million USD. Data access rights are not clear. |
+| QuantaLedger | `cmp_quantaledger` | Pipeline | 2 / 1 / 2 / 1 = 6 | ARR is 780000 USD. The company has 11 customers. Two customers are 46 percent of revenue. Two reference calls are positive. Gross margin and renewal dates are missing. |
+| RelayWorks AI | `cmp_relayworks` | Pipeline | 2 / 0 / 1 / 1 = 4 | The company has six paid customers. ARR is 360000 USD. The sales cycle is 90 days. A new customer has 85 field technicians. Implementation time and weekly use data are missing. |
+| Northstar Security AI | `cmp_northstarsecurity` | Pipeline | 2 / 0 / 1 / 1 = 4 | The company opens a private beta. Revenue, customer, burn, runway, and team data are missing. |
+
+### Required company acceptance conditions
+
+`demo_data/manifest.json` defines these five conditions. The V1 verification also checks the required retrieval and brief behavior.
+
+| Condition | Required source records | Expected result |
+| --- | --- | --- |
+| VectorForge ARR conflict | `meeting-001`, `crm-activity-002`, `slack-001` | Retrieval includes `meeting-001`. The brief shows the unresolved 3.4 million USD Finance value and 3.8 million USD CRM value. The values use separate direct source quotes. |
+| LumenOps runway change | `crm-activity-004`, `crm-activity-005`, `meeting-002`, `slack-004` | The brief uses 9 months as the current runway. It keeps 18 months as an earlier value. It does not mark the current value as old. |
+| Kestrel unverified claim | `slack-006`, `slack-007`, `meeting-003`, `news-005` | Retrieval includes `slack-006`. The brief shows the FDA pilot statement as unverified. It does not state the claim as a fact. |
+| AtlasGrid alias | `crm-company-004`, `meeting-004`, `slack-008`, `news-006` | The import associates `Atlas Grid` records with `cmp_atlasgrid` and displays `AtlasGrid AI`. |
+| Northstar missing metrics | `crm-activity-014`, `slack-016`, `news-012` | The brief shows that revenue, customer, burn, runway, and team data are missing. |
+
+Keep these company IDs, source record IDs, values, dates, and verification states stable. If you change one of them, update `demo_data/manifest.json` and the related tests in the same change.
 
 ## Data Flow
 
@@ -144,6 +225,8 @@ See [the architecture document](docs/architecture.md) for more information.
 | `lib/brief.ts` | Evidence-based brief generation and citation checks |
 | `db/schema.sql` | PostgreSQL and pgvector schema |
 | `demo_data/raw` | Fictional source exports |
+| `demo_data/manifest.json` | Dataset counts and required company acceptance conditions |
+| `demo_data/README.md` | Demo data purpose, conditions, and file layout |
 | `docs/prd-v1.md` | V1 product requirements |
 
 ## V1 Limits
